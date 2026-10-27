@@ -295,3 +295,8 @@ activation removes the production registration. See [setup details](../TROUBLESH
 - Do not retry or switch modes to evade product usage limits.
 
 See the complete [security model](security-model.md).
+
+<!-- fork-chatgpt-project-routing -->
+## Fork: ChatGPT Project routing (experimental)
+
+Optional `projectTarget` is stored in launcher-owned runtime config and forwarded to the task-bound provider, browser helper and browser worker. Diagnostic, login, account-capability, smoke and connector-verification chats remain on the ordinary home surface. For new tasks the worker navigates only to the selected existing Project and verifies a pristine composer and authenticated account. Every physical Send verifies the Project again, then checks the established Project conversation route after acceptance without replaying the prompt. Retained chats pin their conversation identity and fail closed if the helper loses its binding. Browser-only and Full harness share the worker; Zero Risk stays manual. No official Projects API is used or claimed.

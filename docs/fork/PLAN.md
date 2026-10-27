@@ -1,15 +1,13 @@
-# Fork implementation plan — ChatGPT Projects
+# ChatGPT Projects routing — fork work plan
 
-Goal: optionally route Codex tasks and subagents to an existing selected ChatGPT Project without cluttering personal history.
+Goal: optionally route Codex task/subagent conversations into one existing ChatGPT Project instead of personal ChatGPT history.
 
-1. **Research gate — BLOCKED for live DEV**: record the actual project URL and DOM on an authorized isolated ChatGPT account, including authenticated workspace and post-send membership. Do not infer selectors.
-2. **Routing policy — PARTIAL**: integrate the checked-in fail-closed policy into task-bound browser worker (not login, probes, smoke or connector verification). Reject ambiguous navigation without private-history fallback.
-3. **Launcher settings — NOT RUN**: optional existing Project selection, default OFF, account binding, safe private persistence, migration and rollback; manual instructions for Zero Risk.
-4. **Task/agent behavior — NOT RUN**: retained chats, exact conversation identity, compaction, cancellation, images, streaming, MCP, Browser-only, V1, Web↔Web and native↔Web.
-5. **Validation — NOT RUN**: Bun frozen install (root and launcher), `bun run verify`, `bun run smoke:subagents`, `bun run app:smoke`, packaging/audit where relevant and Linux/Windows/macOS Actions jobs.
-6. **Live E2E — BLOCKED**: explicit additional authorization and isolated DEV Project; ensure chats appear and remain in chosen Project, with fail-closed negative tests.
-7. **Review/release — PENDING**: keep as Draft; publishing branch and Draft PR was explicitly authorized, but merge and release were not.
+1. **Baseline & security research — PASS (offline):** fork/upstream `cfeaf04`, no pre-existing fork feature, controlled workspace; no official Projects API. Browser URL/DOM identity **not confirmed live**.
+2. **Fail-closed core guard — IMPLEMENTED (Draft):** validate target/current account and Project, new empty composer, retained conversation; check before/after each physical Send; no silent personal-chat fallback.
+3. **Launcher configuration — IMPLEMENTED (Draft):** optional Project field in Settings, default OFF, authenticated account fingerprint, private temporary handoff to existing transactional setup; invalidates retained tabs on target changes; Zero Risk stays manual.
+4. **Runtime/agent bridge — IMPLEMENTED (Draft):** AppConfig → provider → helper feature negotiation → worker, preserves Browser-only/Full harness routing, freshness, streaming/compaction hooks. Real subagent behavior **not tested**.
+5. **Regression coverage — PARTIAL:** unit and browser-facade tests locally passed; in-repository tests added. Must run full `bun run verify`, `smoke:subagents`, `app:smoke`, `app:package`, `audit`, review Linux/Windows/macOS CI.
+6. **DEV ChatGPT E2E — BLOCKED:** use isolated authorized account and existing Project; confirm actual URL/DOM and saved Project membership for new and retained chats, multipart, cancellation, MCP tools, images, V1/native subagents, account switch, denied access, drift; no retries after accepted Send.
+7. **Release gate — PENDING:** continue Draft PR #1; merge and release require a separate explicit approval.
 
-Invariant: Projects are an organizational context, not a security boundary. Never auto-create, move, archive or delete conversation history. No actual Project IDs, cookies, prompts or tokens in source, PR or exported logs.
-
-Current PR: https://github.com/luqtom/codex-chatgpt-web/pull/1. Do not mark Projects production-ready without isolated live E2E evidence.
+Rollback: disable Project routing for already-finished tasks, or revert feature branch; never automatically delete/move existing ChatGPT conversations. No cookies, tokens, raw diagnostics or private Project IDs in PR.

@@ -20,6 +20,7 @@ const {
   Tray,
 } = require("electron");
 const { BrowserHost, navigationErrorForLog } = require("./browser-host.cjs");
+const { validateProjectPageUrl, authenticatedProjectAccountKey } = require("./project-target.cjs");
 const { BrowserControlServer } = require("./control-server.cjs");
 const { LimitsController } = require("./limits-controller.cjs");
 const { SOURCE_URL: LIMITS_SOURCE_URL } = require("./limits-store.cjs");
@@ -109,6 +110,8 @@ let catalogVerificationTimer = null;
 let catalogVerificationInFlight = false;
 let updateController = null;
 let limitsController = null;
+// In-memory only: invalidate retained tabs on project/account changes, including CLI setup.
+let previousProjectTargetKey;
 
 function findFreePort() {
   return new Promise((resolve, reject) => {
@@ -523,13 +526,21 @@ function syncBrowserPreferences(stateStore, config) {
   const biggerContextEnabled = config?.experimentalBiggerContext === true;
   const composerPredictionsEnabled = config?.composerPredictionsEnabled !== false;
   const enabled = config?.experimentalFreshConversationPerTurn === true;
+  const projectTargetConfigured = config?.projectTarget !== undefined;
+  const target = config?.projectTarget;
+  const targetKey = target && typeof target.url === "string" && typeof target.accountKey === "string"
+    ? `${target.accountKey}\0${target.url}` : null;
+  const projectChanged = previousProjectTargetKey !== undefined && previousProjectTargetKey !== targetKey;
+  previousProjectTargetKey = targetKey;
   const autoApproveToolCalls = config?.autoApproveToolCalls === true;
   const current = stateStore.read();
   if (runtimeHost?.currentOperation()) return current;
   const retentionChanged = current.experimentalFreshConversationPerTurn !== enabled
-    || current.experimentalBiggerContext !== biggerContextEnabled;
+    || current.experimentalBiggerContext !== biggerContextEnabled
+    || projectChanged;
   if (!retentionChanged && current.composerPredictionsEnabled === composerPredictionsEnabled
     && current.autoApproveToolCalls === autoApproveToolCalls
+    && current.projectTargetConfigured === projectTargetConfigured
     && current.biggerContextAvailable === biggerContextAvailable) return current;
   // Runtime restarts leave browser views alive. Retire completed chats when their
   // persistence policy changes, including changes made by the CLI.
@@ -538,7 +549,7 @@ function syncBrowserPreferences(stateStore, config) {
       && tab.interactionMode === "automatic")
     .map(tab => tab.conversationKey));
   for (const key of retainedKeys) releaseRetainedConversation(browserHost, key);
-  const state = stateStore.update({ composerPredictionsEnabled, experimentalFreshConversationPerTurn: enabled, autoApproveToolCalls, biggerContextAvailable,
+  const state = stateStore.update({ composerPredictionsEnabled, experimentalFreshConversationPerTurn: enabled, projectTargetConfigured, autoApproveToolCalls, biggerContextAvailable,
     experimentalBiggerContext: biggerContextEnabled });
   send("launcher:state-changed", state);
   return state;
@@ -547,7 +558,7 @@ function syncBrowserPreferences(stateStore, config) {
 function registerIpc({ logger, stateStore }) {
   const runtimeChannels = new Set([
     "launcher:setup-core", "launcher:setup-mcp", "launcher:uninstall-integration",
-    "launcher:composer-predictions", "launcher:bigger-context", "launcher:skill-attachments", "launcher:fresh-conversation-per-turn",
+    "launcher:composer-predictions", "launcher:bigger-context", "launcher:skill-attachments", "launcher:fresh-conversation-per-turn", "launcher:project-target",
     "launcher:zero-risk-pro", "launcher:browser-interaction-mode",
     "launcher:auto-approve-tool-calls",
     "launcher:connector-name", "launcher:mcp-verify", "launcher:doctor", "launcher:cancel-turns",
@@ -947,6 +958,35 @@ function registerIpc({ logger, stateStore }) {
     const state = stateStore.update({ experimentalSkillAttachments: result.enabled });
     send("launcher:state-changed", state);
     return state;
+  });
+  handle("launcher:project-target", async (_event, rawUrl) => {
+    if (rawUrl !== null && typeof rawUrl !== "string") {
+      throw new Error("ChatGPT Project selection is invalid");
+    }
+    return browserHost.withManualOperation("ChatGPT Project selection", async () => {
+      if ([...browserHost.turnTabs.values()].some(tab => tab.status === "running")) {
+        throw new Error("Finish active browser turns before changing the selected Project");
+      }
+      if (runtimeHost.currentOperation()) throw new Error("Finish the active launcher operation first");
+      if (rawUrl !== null && stateStore.read().browserInteractionMode !== "automatic") {
+        throw new Error("Automatic Project routing is unavailable in Zero Risk mode");
+      }
+      const url = rawUrl === null ? null : validateProjectPageUrl(rawUrl);
+      if (url && !browserHost.state.authenticated) {
+        throw new Error("Sign in to ChatGPT before selecting a Project");
+      }
+      const accountKey = url
+        ? await authenticatedProjectAccountKey(
+          browserHost.view.webContents.session.fetch.bind(browserHost.view.webContents.session))
+        : null;
+      // Retire completed browser surfaces only. ChatGPT conversations remain stored.
+      const retained = new Set([...browserHost.turnTabs.values()]
+        .filter(tab => tab.status === "ready" && tab.conversationKey)
+        .map(tab => tab.conversationKey));
+      for (const key of retained) releaseRetainedConversation(browserHost, key);
+      await runtimeHost.setChatGptProjectTarget(url, accountKey);
+      return syncBrowserPreferences(stateStore, runtimeHost.runtimeConfigSnapshot().config);
+    });
   });
   handle("launcher:fresh-conversation-per-turn", async (_event, enabled) => {
     if (browserHost.activeTraceId || browserHost.currentOperation()) {

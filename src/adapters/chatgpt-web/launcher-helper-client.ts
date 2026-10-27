@@ -212,6 +212,9 @@ export class LauncherBrowserHelperClient {
     if (turn.abortSignal?.aborted) throw new DOMException("ChatGPT web turn aborted", "AbortError");
     await this.ensureChild();
     if (turn.abortSignal?.aborted) throw new DOMException("ChatGPT web turn aborted", "AbortError");
+    if (this.config.projectTarget && !this.helperFeatures.has("chatgpt-project-routing-v1")) {
+      throw new Error("Launcher browser helper does not support verified ChatGPT Project routing; update or restart the launcher");
+    }
     if (turn.onMultipartStageAcknowledged && !this.helperFeatures.has("multipart-stage-ack")) {
       throw new Error(
         "Launcher browser helper does not support multipart acknowledgement forwarding; update or restart the launcher",
@@ -274,6 +277,7 @@ export class LauncherBrowserHelperClient {
           config: {
             appName: this.config.appName,
             browserHostDescriptorPath: this.config.browserHostDescriptorPath!,
+            ...(this.config.projectTarget ? { projectTarget: this.config.projectTarget } : {}),
             browserDiagnosticsPath: this.config.browserDiagnosticsPath,
             turnTimeoutMs: this.config.turnTimeoutMs,
             autoApproveToolCalls: this.config.autoApproveToolCalls,

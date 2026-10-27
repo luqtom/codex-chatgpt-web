@@ -133,3 +133,8 @@ Connector verification and account inspection also use ordinary chats.
 - Defending against a compromised local OS user or compromised Codex/Electron binary.
 - Bypassing ChatGPT plan, workspace, usage, action-control, or model restrictions.
 - Making consumer browser automation equivalent to a supported OpenAI API contract.
+
+<!-- fork-chatgpt-project-routing -->
+## Fork: Project routing security
+
+ChatGPT Projects are a context and organizational feature, **not an authorization boundary**. Project instructions and memory can change the model's behavior. The selected URL and account fingerprint are sensitive private configuration: the UI omits the raw saved URL, setup uses an owner-only temporary file instead of argv, and launcher diagnostics must redact Project addresses. Project routing never bypasses login, tool approval or sandbox policies. If account, Project, new-composer or retained-conversation evidence is missing, a task fails explicitly with **no fallback to personal history**. Once ChatGPT accepts Send, any further verification error must not trigger resubmission. The URL and DOM shape require an authorized DEV E2E before shipping. No chat is moved or removed automatically.

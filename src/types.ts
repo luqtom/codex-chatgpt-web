@@ -266,6 +266,8 @@ export interface CodexProviderConfig {
   chatgptWeb?: {
     /** ChatGPT custom connector attached to tool-capable chats. */
     appName?: string;
+    /** Existing ChatGPT Project, bound to an authenticated account; absent by default. */
+    projectTarget?: { url: string; accountKey: string };
     /** Whether ChatGPT DOM interaction is automatic or explicitly driven by the user. */
     browserInteractionMode?: "automatic" | "manual";
     /** Explicit browser owner. Launcher mode attaches to the embedded Electron ChatGPT surface. */

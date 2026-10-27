@@ -211,3 +211,10 @@ bun run app:package
 [Troubleshooting](TROUBLESHOOTING.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [MIT license](LICENSE) · [CI](https://github.com/miuuyy/codex-chatgpt-web/actions/workflows/ci.yml)
 
 Also by me: <img src="assets/readme/persona-voice.svg" width="20" height="20" alt=""> [ChatGPT Persona Voice](https://github.com/miuuyy/ChatGPT-Persona-Voice) — local, near-real-time custom voices for ChatGPT and Codex.
+
+<!-- fork-chatgpt-project-routing -->
+## Fork: optional ChatGPT Project routing (experimental)
+
+This fork adds an **opt-in** ChatGPT Project target in Launcher → Settings. Paste the canonical URL of an existing accessible Project. A server-authenticated account/workspace fingerprint binds the selection; the task browser refuses an unknown Project surface instead of sending to personal history. Default remains OFF, and disabling the option does not relocate, archive or delete conversations.
+
+**Not production-ready:** the URL/DOM contract has not yet been confirmed against an isolated logged-in DEV Project. Do not rely on it until the DEV E2E matrix in [release validation](docs/release-validation.md) passes. Zero Risk does no DOM automation: open the chosen Project manually before pasting and sending. Project instructions/memory may influence outputs.

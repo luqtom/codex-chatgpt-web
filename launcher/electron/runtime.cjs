@@ -4,6 +4,7 @@ const os = require("node:os");
 const { randomBytes } = require("node:crypto");
 const { spawn } = require("node:child_process");
 const { writePrivateFileAtomic } = require("./atomic-file.cjs");
+const { validateProjectPageUrl } = require("./project-target.cjs");
 const {
   connectorNameForDevSetup,
   connectorNameForSetup,
@@ -1244,6 +1245,47 @@ class RuntimeHost {
       ? await this.runDevSetup("auto-approve-tool-calls", args, options)
       : await this.runSetup("auto-approve-tool-calls", args, options);
     return { ...result, enabled };
+  }
+
+  async setChatGptProjectTarget(rawUrl, accountKey) {
+    const current = this.runtimeConfigSnapshot();
+    if (!current.configured || current.owner !== "launcher") {
+      throw new Error("Configure the launcher-owned runtime before selecting a ChatGPT Project");
+    }
+    if (rawUrl !== null && (current.config?.browserInteractionMode ?? "automatic") !== "automatic") {
+      throw new Error("Automatic Project routing is unavailable in Zero Risk mode");
+    }
+    const url = rawUrl === null ? null : validateProjectPageUrl(rawUrl);
+    if (url !== null && (typeof accountKey !== "string" || !/^[a-f0-9]{64}$/.test(accountKey))) {
+      throw new Error("ChatGPT Project selection requires a verified account");
+    }
+    // Setup receives a private owner-only file, never a sensitive URL in process argv.
+    const development = this.launcherProfile === "development";
+    const temporaryPath = path.join(this.coreHome, "runtime", `project-selection-${randomBytes(12).toString("hex")}.json`);
+    const args = [
+      ...(development ? ["dev", "setup"] : ["setup"]),
+      current.mode === "full" ? "--full" : "--browser-only",
+      "--browser-host-descriptor", this.browserDescriptorPath,
+      ...this.browserInteractionArgs(),
+      "--acknowledge-unofficial",
+      ...(development ? [] : ["--replace-codex-route", "--restart-service"]),
+      ...(url ? ["--project-target-file", temporaryPath] : ["--no-project-target"]),
+    ];
+    if (current.config?.autoApproveToolCalls === true) args.push("--auto-approve-tool-calls");
+    try {
+      if (url) writePrivateFileAtomic(temporaryPath, `${JSON.stringify({ url, accountKey })}\n`);
+      const options = {
+        message: "Updating ChatGPT Project routing",
+        successMessage: url ? "ChatGPT Project routing configured" : "ChatGPT Project routing disabled",
+        timeoutMs: CORE_SETUP_TIMEOUT_MS,
+      };
+      const result = development
+        ? await this.runDevSetup("project-target", args, options)
+        : await this.runSetup("project-target", args, options);
+      return { ...result, enabled: Boolean(url) };
+    } finally {
+      fs.rmSync(temporaryPath, { force: true });
+    }
   }
 
   async setFreshConversationPerTurn(enabled) {

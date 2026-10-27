@@ -1,7 +1,8 @@
-import { existsSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync } from "node:fs";
+import { validateChatGptProjectTarget } from "./chatgpt-project-routing";
 import { randomBytes } from "node:crypto";
 import { createServer } from "node:net";
-import { join } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import type { AppConfig, BrowserInteractionMode, RuntimeMode, SubagentProtocol } from "./config";
 import {
   currentRuntimeCommand,
@@ -57,6 +58,9 @@ export interface SetupOptions {
   composerPredictionsEnabled?: boolean;
   experimentalSkillAttachments?: boolean;
   experimentalFreshConversationPerTurn?: boolean;
+  /** Private launcher-owned file: never accept a project URL on command line. */
+  projectTargetFile?: string;
+  clearProjectTarget?: boolean;
   zeroRiskProEnabled?: boolean;
   replaceCodexRoute?: boolean;
   preserveDisconnectedRoute?: boolean;
@@ -140,6 +144,7 @@ function meaningfulRuntimeChange(before: AppConfig, after: AppConfig): boolean {
     manualAppName: before.manualAppName,
     browserHost: before.browserHost,
     browserInteractionMode: before.browserInteractionMode,
+    projectTarget: before.projectTarget,
     browserHostDescriptorPath: before.browserHostDescriptorPath,
     chromeExecutablePath: before.chromeExecutablePath,
     storageStatePath: before.storageStatePath,
@@ -171,6 +176,7 @@ function meaningfulRuntimeChange(before: AppConfig, after: AppConfig): boolean {
     manualAppName: after.manualAppName,
     browserHost: after.browserHost,
     browserInteractionMode: after.browserInteractionMode,
+    projectTarget: after.projectTarget,
     browserHostDescriptorPath: after.browserHostDescriptorPath,
     chromeExecutablePath: after.chromeExecutablePath,
     storageStatePath: after.storageStatePath,
@@ -304,6 +310,27 @@ function baseConfig(
   }
   if (options.experimentalFreshConversationPerTurn !== undefined) {
     config.experimentalFreshConversationPerTurn = options.experimentalFreshConversationPerTurn;
+  }
+  if (options.projectTargetFile && options.clearProjectTarget) {
+    throw new Error("Cannot enable and disable ChatGPT Project routing together");
+  }
+  if (options.clearProjectTarget) delete config.projectTarget;
+  if (options.projectTargetFile) {
+    const targetPath = resolve(options.projectTargetFile);
+    const trustedDirectory = join(dirname(getConfigPath()), "runtime");
+    if (!targetPath.startsWith(`${trustedDirectory}${sep}`)) {
+      throw new Error("ChatGPT Project selection file must belong to this launcher runtime");
+    }
+    try {
+      const stat = lstatSync(targetPath);
+      if (!stat.isFile() || stat.size < 1 || stat.size > 2048
+        || (process.platform !== "win32" && (stat.mode & 0o077) !== 0)) {
+        throw new Error("unsafe file");
+      }
+      config.projectTarget = validateChatGptProjectTarget(JSON.parse(readFileSync(targetPath, "utf8")));
+    } catch {
+      throw new Error("Cannot verify private ChatGPT Project selection file");
+    }
   }
   if (options.experimentalBiggerContext !== undefined) {
     config.experimentalBiggerContext = options.experimentalBiggerContext;
