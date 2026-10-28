@@ -52,7 +52,7 @@ Full harness mode connects ChatGPT to the current task’s files, terminal, tool
 3. **Sign in to ChatGPT** in the embedded browser and run the browser smoke test.
 4. **Install models** and restart Codex once. In automatic mode, choose a model ending in **(Web)**. Pro versions have separate entries; Sol reasoning is selected through Effort. Zero Risk keeps its dedicated entry.
 5. **For coding with tools**, open **MCP** in the launcher and complete the Full harness setup below.
-6. **Optional:** set a ChatGPT Project target in Launcher → Settings (see [Fork: optional ChatGPT Project routing](#fork-optional-chatgpt-project-routing-experimental)).
+6. **Optional:** set a ChatGPT Project target in Launcher → Settings (see [ChatGPT Project routing](docs/fork/PROJECT_ROUTING.md)).
 
 Do not use the upstream `.exe`/`.dmg`/`.AppImage` downloads or `install-launcher` scripts for this fork: they install the original project without these changes.
 

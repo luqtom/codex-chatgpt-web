@@ -2,7 +2,7 @@
   <img src="assets/readme/hero.svg" width="960" alt="Web モデルに切り替えても、Codex はそのまま。ChatGPT のプラン。いつものワークフロー。モデルの力を最大限に。">
 </p>
 
-> **Fork of [miuuyy/codex-chatgpt-web](https://github.com/miuuyy/codex-chatgpt-web).** Upstream installers and release downloads do not contain this fork's changes. Install from source: see the [English Get started](README.md#get-started).
+> **This is a fork of [miuuyy/codex-chatgpt-web](https://github.com/miuuyy/codex-chatgpt-web)** with optional ChatGPT Project routing. The upstream installers and release downloads do **not** contain this fork's changes, so install it from source as described in [Get started](#get-started).
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a>
@@ -26,11 +26,50 @@ Full ハーネスモードでは、MCP を通じて ChatGPT を現在のタス�
 
 **利用可能なモデル：** Free/Go → **Luna / Think**。推論コントロールがあるアカウント → **Instant～High** に加え、利用可能な場合に **Extra High** と **Pro**。ランチャーがアカウントの利用可能なモデルを検出します。
 
-1. **Install from source** (Git + Bun 1.4.0, `git clone https://github.com/luqtom/codex-chatgpt-web.git`, `bun run app`): see [Get started](README.md#get-started).
-2. **ChatGPT にサインイン**：内蔵ブラウザーでログインし、ブラウザーのスモークテストを実行します。
-3. **モデルをインストール**：Codex を一度再起動します。自動モードでは、名前の末尾が **(Web)** のモデルを選択します。Pro はバージョン別の項目、Sol の推論レベルは Effort で選択します。Zero Risk は専用の項目を引き続き使用します。
-4. **ツールを使って開発する場合**：ランチャーの **MCP** を開き、下記の Full ハーネス設定を完了します。
+1. **Install Git and [Bun 1.4.0](https://bun.sh)**, then open a new terminal.
+2. **Clone this fork and start the launcher:**
 
+   **Windows PowerShell**
+
+   ```powershell
+   winget install Git.Git
+   iex "& {$(irm https://bun.sh/install.ps1)} -Version 1.4.0"
+   git clone https://github.com/luqtom/codex-chatgpt-web.git
+   cd codex-chatgpt-web
+   bun run app
+   ```
+
+   **macOS / Linux**
+
+   ```bash
+   curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.0"
+   git clone https://github.com/luqtom/codex-chatgpt-web.git && \
+   cd codex-chatgpt-web && \
+   bun run app
+   ```
+
+   `bun run app` installs the locked dependencies and opens the launcher. Use the same command to start it later.
+3. **Sign in to ChatGPT** in the embedded browser and run the browser smoke test.
+4. **Install models** and restart Codex once. In automatic mode, choose a model ending in **(Web)**. Pro versions have separate entries; Sol reasoning is selected through Effort. Zero Risk keeps its dedicated entry.
+5. **For coding with tools**, open **MCP** in the launcher and complete the Full harness setup below.
+6. **Optional:** set a ChatGPT Project target in Launcher → Settings (see [ChatGPT Project routing](docs/fork/PROJECT_ROUTING.md)).
+
+Do not use the upstream `.exe`/`.dmg`/`.AppImage` downloads or `install-launcher` scripts for this fork: they install the original project without these changes.
+
+<details>
+<summary><strong>Updates & packaging</strong></summary>
+
+Quit the launcher before updating, then pull the latest fork and start it again. Your ChatGPT profile and launcher settings are preserved.
+
+```bash
+cd codex-chatgpt-web
+git pull
+bun run app
+```
+
+To build your own installable package from this fork, run `bun run app:package`.
+
+</details>
 
 <details>
 <summary><strong>モデル・モード・MCP の設定</strong></summary>
