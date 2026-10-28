@@ -24,7 +24,7 @@ type Fixture = {
 function fakePage(f: Fixture = {}): Page {
   let urlReads = 0;
   return {
-    url: () => (++urlReads >= 3 && f.nextUrl ? f.nextUrl : f.url ?? projectUrl),
+    url: () => (++urlReads >= 2 && f.nextUrl ? f.nextUrl : f.url ?? projectUrl),
     evaluate: async () => ({
       userId: f.userId ?? "user", accountId: f.accountId ?? "workspace",
       planType: "plus", structure: "personal", needsAttention: false,
