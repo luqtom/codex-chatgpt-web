@@ -5188,25 +5188,23 @@ export class ChatGptBrowserWorker {
               checkpoint => diagnostics.capture(page, `multipart-${index + 1}-${checkpoint}`),
               turn.abortSignal ? AbortSignal.any([stageSignal, turn.abortSignal]) : stageSignal,
               undefined,
-              { onSubmitted: async () => {
+              { onSubmitted: taskProject ? async () => {
                 // The physical Send is accepted; never replay it after a failed project check.
                 recordStageUsage?.();
-                if (taskProject) {
-                  const route = await verifyAcceptedChatGptProjectTurn(page, taskProject, projectConversationId, turn.abortSignal);
-                  projectConversationId = route.conversationId;
-                  if (turn.retainConversation && turn.conversationKey && projectConversationId) {
-                    this.retainedProjectConversations.set(turn.conversationKey, projectConversationId);
-                  }
+                const route = await verifyAcceptedChatGptProjectTurn(page, taskProject, projectConversationId, turn.abortSignal);
+                projectConversationId = route.conversationId;
+                if (turn.retainConversation && turn.conversationKey && projectConversationId) {
+                  this.retainedProjectConversations.set(turn.conversationKey, projectConversationId);
                 }
-              }, onSendActivated: async () => {
+              } : recordStageUsage, onSendActivated: async () => {
                 await this.assertSelectedEffort(page, mode);
                 if (taskProject) await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
                 submissionRejection.begin(page);
                 await submissionRejection.captureAlertBaseline();
                 if (taskProject) await markPhysicalSendActivated();
-              }, beforePhysicalSend: async () => {
-                if (taskProject) await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
-              } },
+              }, ...(taskProject ? { beforePhysicalSend: async () => {
+                await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
+              } } : {}) },
               undefined,
               launcherObservationRecovery
                 ? async (...args) => {
@@ -5397,9 +5395,9 @@ export class ChatGptBrowserWorker {
             await submissionRejection.captureAlertBaseline();
             if (taskProject) await markPhysicalSendActivated();
             else await turn.onSendActivated?.();
-          }, beforePhysicalSend: async () => {
-            if (taskProject) await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
-          } },
+          }, ...(taskProject ? { beforePhysicalSend: async () => {
+            await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
+          } } : {}) },
           completionTracker,
           launcherObservationRecovery
             ? async (...args) => {
