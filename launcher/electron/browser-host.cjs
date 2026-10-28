@@ -900,7 +900,7 @@ class BrowserHost {
         traceId: tab.traceId,
         errorCode,
         errorDescription,
-        url,
+        origin: navigationOriginForLog(url),
       });
       this.removeTurnTab(tab, true);
     });

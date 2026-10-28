@@ -85,3 +85,8 @@ interactive account flow.
 CI packaging smoke is required. Before claiming interactive Linux support for a release, repeat
 items 2 through 7 under a supported desktop session and record the display server and packaging
 format used.
+
+<!-- fork-chatgpt-project-routing -->
+## Fork: ChatGPT Project routing — required acceptance matrix
+
+Status: **NOT RUN** for the real signed-in Project. Complete against an isolated, authorized DEV profile before release: empty new Project chat, confirmed saved Project membership, retained and reloaded turns, compaction/Bigger Context, cancellation, attached images and streaming, Browser-only, Full harness/MCP, Zero Risk manual handoff, Compatibility V1 and Native/V2 subagents (Web↔Web, native↔Web). Negative paths: wrong account/workspace, removed Project access, URL/DOM drift, redirect to ordinary /c/, helper protocol mismatch, post-Send ambiguity without replay. Preserve login and diagnostics outside the chosen Project. Run `bun run verify`, `bun run smoke:subagents`, `bun run app:smoke`, packaging and audit as applicable and inspect CI Linux/macOS/Windows. Offline test fixtures do not prove actual ChatGPT Project support.

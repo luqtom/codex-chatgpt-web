@@ -21,6 +21,9 @@ import {
   LEGACY_CHATGPT_CONNECTOR_NAMES,
 } from "../../config";
 import { estimateTokens } from "../../lib/token-estimate";
+import { ChatGptProjectRoutingError, validateChatGptProjectTarget, redactChatGptProjectSensitiveText, type ChatGptProjectTarget } from "../../chatgpt-project-routing";
+import { verifyChatGptProjectTurnPage, verifyAcceptedChatGptProjectTurn } from "./project-routing";
+import { ChatGptProjectConversationStore } from "./project-conversation-store";
 import { CHATGPT_STOPPED_THINKING_LABELS } from "./ui-labels";
 import type { CodexProviderConfig } from "../../types";
 import { parseDataUrl } from "../image";
@@ -1107,6 +1110,7 @@ export interface ResolvedBrowserConfig {
   browserHostDescriptorPath?: string;
   browserHelperScriptPath?: string;
   browserDiagnosticsPath?: string;
+  projectTarget?: ChatGptProjectTarget;
   storageStatePath: string;
   chromeExecutablePath: string;
   turnTimeoutMs?: number;
@@ -1535,7 +1539,7 @@ export function stripChatGptTraceControlSuffix(block: ChatGptVisibleTraceBlock):
 }
 
 export function redactChatGptUiDiagnostic(value: string): string {
-  return value
+  return redactChatGptProjectSensitiveText(value)
     .replace(/<codex_context_json>[\s\S]*?<\/codex_context_json>/gi, "<codex_context_json>[redacted]</codex_context_json>")
     .replace(/\b(turn|binding|call)_[A-Za-z0-9_-]{12,}\b/g, "$1_[redacted]");
 }
@@ -1862,6 +1866,7 @@ export function resolveBrowserConfig(provider: CodexProviderConfig): ResolvedBro
     configured.browserDiagnosticsPath?.trim() || join(getConfigDir(), "diagnostics", "browser-turns"),
   ));
   const turnTimeoutMs = configured.turnTimeoutMs;
+  const projectTarget = configured.projectTarget === undefined ? undefined : validateChatGptProjectTarget(configured.projectTarget);
   if (browserHost === "launcher" && !browserHostDescriptorPath) {
     throw new Error("Launcher browser host requires chatgptWeb.browserHostDescriptorPath");
   }
@@ -1887,6 +1892,7 @@ export function resolveBrowserConfig(provider: CodexProviderConfig): ResolvedBro
     ...(browserHostDescriptorPath ? { browserHostDescriptorPath: resolve(expandUserPath(browserHostDescriptorPath)) } : {}),
     ...(resolvedBrowserHelperScriptPath ? { browserHelperScriptPath: resolvedBrowserHelperScriptPath } : {}),
     browserDiagnosticsPath,
+    ...(projectTarget ? { projectTarget } : {}),
     storageStatePath: resolve(expandUserPath(configured.storageStatePath?.trim() || join(getConfigDir(), "browser", "storage-state.json"))),
     chromeExecutablePath: resolve(expandUserPath(configured.chromeExecutablePath?.trim() || defaultChromeExecutable())),
     ...(turnTimeoutMs !== undefined ? { turnTimeoutMs } : {}),
@@ -2003,6 +2009,7 @@ export class ChatGptBrowserWorker {
   private launcherHelper?: LauncherBrowserHelperClient;
   private maintenanceTail: Promise<void> = Promise.resolve();
   private readonly activeRuns = new Map<string, Promise<string>>();
+  private readonly retainedProjectConversations = new ChatGptProjectConversationStore();
 
   private constructor(private readonly config: ResolvedBrowserConfig) {}
 
@@ -2125,6 +2132,7 @@ export class ChatGptBrowserWorker {
   }
 
   async close(): Promise<void> {
+    this.retainedProjectConversations.clear();
     if (this.launcherHelper) {
       const helper = this.launcherHelper;
       this.launcherHelper = undefined;
@@ -2496,18 +2504,26 @@ export class ChatGptBrowserWorker {
     page: Page,
     captureDiagnostic?: (checkpoint: string) => Promise<void>,
     abortSignal?: AbortSignal,
+    projectTarget?: ChatGptProjectTarget,
   ): Promise<Locator> {
     throwIfPromptAttachmentAborted(abortSignal);
     // Launcher verification refreshes its owned page before attaching Playwright so a newly added
     // connector is present in the catalog. Navigating again here destroys that freshly hydrated
     // document and made the first verification race a second SPA bootstrap. A leased turn starts on
     // about:blank and therefore still performs exactly one navigation through this same method.
-    const targetUrl = CHATGPT_NEW_CHAT_URL;
+    const targetUrl = projectTarget?.url ?? CHATGPT_NEW_CHAT_URL;
     if (page.url() !== targetUrl) {
-      await withBrowserTurnAbort(page.goto(targetUrl, {
-        waitUntil: "domcontentloaded",
-        timeout: 60_000,
-      }), abortSignal);
+      try {
+        await withBrowserTurnAbort(page.goto(targetUrl, {
+          waitUntil: "domcontentloaded", timeout: 60_000,
+        }), abortSignal);
+      } catch (error) {
+        if (projectTarget) {
+          if (abortSignal?.aborted) throw new DOMException("ChatGPT Project navigation aborted", "AbortError");
+          throw new ChatGptProjectRoutingError("project navigation failed or access is unavailable");
+        }
+        throw error;
+      }
       await captureDiagnostic?.("new-chat-navigation-complete");
     }
     // A failed page read is not evidence of an expired login. Preserve the actual
@@ -2517,7 +2533,8 @@ export class ChatGptBrowserWorker {
     await captureDiagnostic?.("composer-ready");
     await throwIfChatGptSessionFailureAlert(page);
     await assertAuthenticatedChatGptPage(page);
-    await assertNewChatPage(page);
+    if (projectTarget) await verifyChatGptProjectTurnPage(page, projectTarget, "before-attach");
+    else await assertNewChatPage(page);
     await captureDiagnostic?.("session-verified");
     return composer;
   }
@@ -3540,7 +3557,7 @@ export class ChatGptBrowserWorker {
     captureDiagnostic?: (checkpoint: string) => Promise<void>,
     abortSignal?: AbortSignal,
     externalProgress?: ChatGptTurnProgressReader,
-    submissionLifecycle?: Pick<BrowserTurn, "onSendActivated" | "onSubmitted">,
+    submissionLifecycle?: Pick<BrowserTurn, "onSendActivated" | "onSubmitted"> & { beforePhysicalSend?: () => Promise<void> },
     completionTracker?: ChatGptCompletionTracker,
     recoverObservation?: ChatGptObservationRecovery,
   ): Promise<ChatGptSubmissionEvidence> {
@@ -3566,6 +3583,10 @@ export class ChatGptBrowserWorker {
     await captureDiagnostic?.("send-ready");
     const initialToolBatchRevision = externalProgress?.snapshot().lastToolBatchRevision ?? 0;
     await submissionLifecycle?.onSendActivated?.();
+    // The launcher helper acknowledgement can take time. A fresh project/account check
+    // must follow it, immediately before the physical keypress, on the same leased page.
+    await submissionLifecycle?.beforePhysicalSend?.();
+    if (abortSignal?.aborted) throw new DOMException("ChatGPT web turn aborted", "AbortError");
     const sendAbort = new AbortController();
     const sendSignal = abortSignal
       ? AbortSignal.any([abortSignal, sendAbort.signal])
@@ -4780,6 +4801,16 @@ export class ChatGptBrowserWorker {
     trackUsage = false,
   ): Promise<string> {
     if (turn.abortSignal?.aborted) throw new DOMException("ChatGPT web turn aborted", "AbortError");
+    const taskProject = maintenancePage ? undefined : this.config.projectTarget;
+    let projectConversationId: string | undefined;
+    // In Project mode the first physical Send (including a multipart stage) marks the
+    // turn as activated, so a later failure is reported as non-retryable, never replayed.
+    let firstPhysicalSendActivated = false;
+    const markPhysicalSendActivated = async () => {
+      if (firstPhysicalSendActivated) return;
+      firstPhysicalSendActivated = true;
+      await turn.onSendActivated?.();
+    };
     if ((turn.externalProgress !== undefined) !== (turn.completionFence !== undefined)) {
       throw new Error("Tool-capable ChatGPT turns require both progress and terminal-fence transports");
     }
@@ -4930,6 +4961,12 @@ export class ChatGptBrowserWorker {
       });
       if (!maintenancePage && !launcherSurfaceId) managedPage = page;
       diagnosticPage = page;
+      if (taskProject && reuseConversation) {
+        const pinned = turn.conversationKey && this.retainedProjectConversations.get(taskProject, turn.conversationKey);
+        if (!pinned) throw new ChatGptProjectRoutingError("retained Project conversation binding was lost");
+        projectConversationId = pinned;
+        await verifyChatGptProjectTurnPage(page, taskProject, "before-send", pinned);
+      }
       const rebindLauncherPage = async (
         attempt: number,
         cause: Error,
@@ -5063,6 +5100,7 @@ export class ChatGptBrowserWorker {
             page,
             checkpoint => diagnostics.capture(page, checkpoint),
             turn.abortSignal,
+            taskProject,
           ),
         );
       }
@@ -5153,11 +5191,23 @@ export class ChatGptBrowserWorker {
               checkpoint => diagnostics.capture(page, `multipart-${index + 1}-${checkpoint}`),
               turn.abortSignal ? AbortSignal.any([stageSignal, turn.abortSignal]) : stageSignal,
               undefined,
-              { onSubmitted: recordStageUsage, onSendActivated: async () => {
+              { onSubmitted: taskProject ? async () => {
+                // The physical Send is accepted; never replay it after a failed project check.
+                recordStageUsage?.();
+                const route = await verifyAcceptedChatGptProjectTurn(page, taskProject, projectConversationId, turn.abortSignal);
+                projectConversationId = route.conversationId;
+                if (turn.retainConversation && turn.conversationKey && projectConversationId) {
+                  this.retainedProjectConversations.set(taskProject, turn.conversationKey, projectConversationId);
+                }
+              } : recordStageUsage, onSendActivated: async () => {
                 await this.assertSelectedEffort(page, mode);
+                if (taskProject) await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
                 submissionRejection.begin(page);
                 await submissionRejection.captureAlertBaseline();
-              } },
+                if (taskProject) await markPhysicalSendActivated();
+              }, ...(taskProject ? { beforePhysicalSend: async () => {
+                await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
+              } } : {}) },
               undefined,
               launcherObservationRecovery
                 ? async (...args) => {
@@ -5288,6 +5338,7 @@ export class ChatGptBrowserWorker {
                 page,
                 checkpoint => diagnostics.capture(page, checkpoint),
                 turn.abortSignal,
+                taskProject,
               );
               mode = await this.selectModelAndEffort(
                 page,
@@ -5323,11 +5374,19 @@ export class ChatGptBrowserWorker {
           checkpoint => diagnostics.capture(page, checkpoint),
           turn.abortSignal ? AbortSignal.any([stageSignal, turn.abortSignal]) : stageSignal,
           turn.externalProgress,
-          { ...turn, onSubmitted: () => {
+          { ...turn, onSubmitted: async () => {
             recordFinalUsage?.();
-            return turn.onSubmitted?.();
+            await turn.onSubmitted?.();
+            if (taskProject) {
+              const route = await verifyAcceptedChatGptProjectTurn(page, taskProject, projectConversationId, turn.abortSignal);
+              projectConversationId = route.conversationId;
+              if (turn.retainConversation && turn.conversationKey && projectConversationId) {
+                this.retainedProjectConversations.set(taskProject, turn.conversationKey, projectConversationId);
+              }
+            }
           }, onSendActivated: async () => {
             await this.assertSelectedEffort(page, mode);
+            if (taskProject) await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
             console.info(`[chatgpt-web] final_submission_prepared ${JSON.stringify({
               traceId: turn.traceId, modelFamily: mode.modelFamily, effort: mode.effort,
               parts: prepared.multipart?.parts.length ?? 1,
@@ -5337,8 +5396,11 @@ export class ChatGptBrowserWorker {
             })}`);
             submissionRejection.begin(page);
             await submissionRejection.captureAlertBaseline();
-            await turn.onSendActivated?.();
-          } },
+            if (taskProject) await markPhysicalSendActivated();
+            else await turn.onSendActivated?.();
+          }, ...(taskProject ? { beforePhysicalSend: async () => {
+            await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
+          } } : {}) },
           completionTracker,
           launcherObservationRecovery
             ? async (...args) => {
@@ -5664,6 +5726,10 @@ export class ChatGptBrowserWorker {
        }
       }
 
+      if (taskProject) {
+        if (!projectConversationId) throw new ChatGptProjectRoutingError("no verified project conversation identity");
+        await verifyChatGptProjectTurnPage(page, taskProject, "after-send", projectConversationId);
+      }
       const finalRejection = await submissionRejection.failure();
       if (finalRejection) throw finalRejection;
       if (this.context && this.config.browserHost === "managed-chrome") {
@@ -5693,6 +5759,18 @@ export class ChatGptBrowserWorker {
         }
         diagnosticCompleted = true;
         throw turn.abortSignal.reason;
+      }
+      if (taskProject && error instanceof Error &&
+          redactChatGptProjectSensitiveText(error.message) !== error.message) {
+        // Keep the original failure type (timeout, sign-in, rejection); only hide the address.
+        error.message = redactChatGptProjectSensitiveText(error.message);
+        if (error.stack) error.stack = redactChatGptProjectSensitiveText(error.stack);
+      }
+      if (error instanceof ChatGptProjectRoutingError) {
+        error = new ChatGptWebAdapterError(error.message, {
+          status: 409, errorType: "invalid_request_error",
+          code: error.code, retryable: false,
+        });
       }
       console.error(
         `[chatgpt-web] browser turn ${turn.traceId} failed:`

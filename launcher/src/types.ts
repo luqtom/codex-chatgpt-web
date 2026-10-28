@@ -22,6 +22,7 @@ export interface LauncherState {
   composerPredictionsEnabled: boolean;
   experimentalSkillAttachments: boolean;
   experimentalFreshConversationPerTurn: boolean;
+  projectTargetConfigured?: boolean;
   zeroRiskProEnabled: boolean;
   sidebarOpen: boolean;
   sidebarWidth: number;
@@ -179,6 +180,7 @@ export interface LauncherApi {
   setSkillAttachments(enabled: boolean): Promise<LauncherState>;
   setAutoApproveToolCalls(enabled: boolean): Promise<LauncherState>;
   setFreshConversationPerTurn(enabled: boolean): Promise<LauncherState>;
+  setChatGptProjectTarget(url: string | null): Promise<LauncherState>;
   setZeroRiskPro(enabled: boolean): Promise<LauncherState>;
   setBrowserInteractionMode(mode: BrowserInteractionMode): Promise<{
     state: LauncherState;

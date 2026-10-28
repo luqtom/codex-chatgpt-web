@@ -8,6 +8,7 @@ import {
   CHATGPT_WEB_ZERO_RISK_PRO_BACKEND_MODEL,
 } from "./chatgpt-web-models";
 import type { CodexProviderConfig } from "./types";
+import { validateChatGptProjectTarget, type ChatGptProjectTarget } from "./chatgpt-project-routing";
 import { VERSION } from "./version";
 
 export type RuntimeMode = "browser-only" | "full";
@@ -121,6 +122,8 @@ export interface AppConfig {
   composerPredictionsEnabled: boolean;
   experimentalSkillAttachments: boolean;
   experimentalFreshConversationPerTurn: boolean;
+  /** Optional task-only Project target. */
+  projectTarget?: ChatGptProjectTarget;
   /** Explicitly install the additional Pro-sized model row while Zero Risk is active. */
   zeroRiskProEnabled: boolean;
   /** Optional adapter-silence budget for the Responses watchdog. */
@@ -429,6 +432,8 @@ function parseConfig(value: unknown, path: string): AppConfig {
   if (browserInteractionMode !== "automatic" && browserInteractionMode !== "manual") {
     throw new Error(`Invalid browserInteractionMode in ${path}`);
   }
+  const projectTarget = parsed.projectTarget === undefined
+    ? undefined : validateChatGptProjectTarget(parsed.projectTarget);
   if (browserInteractionMode === "manual" && parsed.mode !== "full") {
     throw new Error(`Zero Risk requires full mode in ${path}`);
   }
@@ -580,6 +585,7 @@ function parseConfig(value: unknown, path: string): AppConfig {
     manualAppName,
     browserInteractionMode,
     subagentProtocol,
+    ...(projectTarget ? { projectTarget } : {}),
     solAvailable,
     proAvailable,
     experimentalBiggerContext,
@@ -630,6 +636,7 @@ export function providerConfig(config: AppConfig): CodexProviderConfig {
       browserInteractionMode: config.browserInteractionMode,
       browserHost: config.browserHost,
       browserHostDescriptorPath: config.browserHostDescriptorPath,
+      ...(!manual && config.projectTarget ? { projectTarget: validateChatGptProjectTarget(config.projectTarget) } : {}),
       storageStatePath: config.storageStatePath,
       chromeExecutablePath: config.chromeExecutablePath,
       brokerSocketPath: config.brokerSocketPath,

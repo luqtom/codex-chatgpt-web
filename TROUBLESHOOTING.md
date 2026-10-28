@@ -497,3 +497,8 @@ enough to distinguish setup, routing, browser DOM, account, and MCP failures.
 Before uploading anything, read [SECURITY.md](SECURITY.md). Never publish raw launcher logs, cookies,
 browser storage, API keys, Tunnel IDs, full Codex prompts, tool output containing private data, or
 absolute private paths.
+
+<!-- fork-chatgpt-project-routing -->
+## Fork: ChatGPT Project routing
+
+In Launcher → Settings → ChatGPT Project, paste the canonical page URL of an **existing** Project accessible to the account signed into the launcher. When a Project is selected and cannot be verified, Codex stops instead of silently sending to personal ChatGPT history. Check account/workspace and Project access before retrying; after any accepted Send inspect the resulting chat rather than submitting a duplicate. If Chrome/Electron UI changes, preserve a privacy-safe diagnostic without private identifiers. Disable the setting **after active turns finish** to restore ordinary-chat behavior without moving/deleting existing conversations. In Zero Risk choose the Project manually — the launcher does not inspect or operate its DOM.

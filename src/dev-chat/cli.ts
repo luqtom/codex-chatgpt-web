@@ -357,6 +357,11 @@ export async function runDevCommand(args: string[]): Promise<void> {
     const skillAttachments = takeFlag(args, "--skill-attachments");
     const inlineSkills = takeFlag(args, "--inline-skills");
     if (skillAttachments && inlineSkills) throw new Error("Choose --skill-attachments or --inline-skills");
+    const projectTargetFile = takeOption(args, "--project-target-file");
+    const noProjectTarget = takeFlag(args, "--no-project-target");
+    if (projectTargetFile && noProjectTarget) {
+      throw new Error("Choose a Project selection file or --no-project-target");
+    }
     const freshConversation = takeFlag(args, "--fresh-conversation");
     const retainedConversation = takeFlag(args, "--retained-conversation");
     if (freshConversation && retainedConversation) {
@@ -381,6 +386,8 @@ export async function runDevCommand(args: string[]): Promise<void> {
       ...(predictions || noPredictions ? { composerPredictionsEnabled: predictions } : {}),
       ...(skillAttachments || inlineSkills ? { experimentalSkillAttachments: skillAttachments } : {}),
       ...(freshConversation || retainedConversation ? { experimentalFreshConversationPerTurn: freshConversation } : {}),
+      ...(projectTargetFile ? { projectTargetFile } : {}),
+      ...(noProjectTarget ? { clearProjectTarget: true } : {}),
       ...(tunnelId ? { tunnelId } : {}),
       ...(runtimeKeyFile ? { runtimeKeyFile } : {}),
     });

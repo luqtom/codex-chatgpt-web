@@ -2,6 +2,7 @@ import { validateSkillFiles } from "./skill-attachments";
 import { createInterface } from "node:readline";
 import { stdin, stderr, stdout } from "node:process";
 import type { CodexProviderConfig } from "../../types";
+import { validateChatGptProjectTarget, type ChatGptProjectTarget } from "../../chatgpt-project-routing";
 import { ChatGptBrowserWorker, closeChatGptBrowserWorkers, type BrowserTurn } from "./browser-worker";
 import { ChatGptCompactionHandoffAccepted, ChatGptWebAdapterError } from "./adapter-error";
 import type { ChatGptWebCapabilities } from "./model";
@@ -17,6 +18,7 @@ interface RunMessage {
   config: {
     appName: string;
     browserHostDescriptorPath: string;
+    projectTarget?: ChatGptProjectTarget;
     browserDiagnosticsPath?: string;
     turnTimeoutMs: number;
     autoApproveToolCalls: boolean;
@@ -192,6 +194,7 @@ async function run(message: RunMessage): Promise<void> {
       appName: message.config.appName,
       browserHost: "launcher",
       browserHostDescriptorPath: message.config.browserHostDescriptorPath,
+      ...(message.config.projectTarget ? { projectTarget: validateChatGptProjectTarget(message.config.projectTarget) } : {}),
       browserDiagnosticsPath: message.config.browserDiagnosticsPath,
       turnTimeoutMs: message.config.turnTimeoutMs,
       autoApproveToolCalls: message.config.autoApproveToolCalls,
@@ -534,4 +537,4 @@ process.once("SIGTERM", () => {
 });
 
 // Advertise the optional frames this helper understands so the daemon can negotiate them explicitly.
-writeProtocol({ type: "ready", features: ["progress", "tool-boundary-ack", "completion-fence", "multipart-stage-ack", "skill-attachments"] });
+writeProtocol({ type: "ready", features: ["progress", "tool-boundary-ack", "completion-fence", "multipart-stage-ack", "skill-attachments", "chatgpt-project-routing-v1"] });

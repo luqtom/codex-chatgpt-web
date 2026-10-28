@@ -62,6 +62,9 @@ function readState(filePath) {
     ]) {
       if (typeof state[key] !== "boolean") state[key] = DEFAULT_STATE[key];
     }
+    if (state.projectTargetConfigured !== undefined && typeof state.projectTargetConfigured !== "boolean") {
+      delete state.projectTargetConfigured;
+    }
     if (state.browserInteractionMode !== "automatic" && state.browserInteractionMode !== "manual") {
       state.browserInteractionMode = DEFAULT_STATE.browserInteractionMode;
     }

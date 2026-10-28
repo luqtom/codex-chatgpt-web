@@ -8,6 +8,9 @@ const MAX_LOG_STRING_CHARS = 16 * 1024;
 
 function redactText(value) {
   const redacted = value
+    .replace(/https?:\/\/chatgpt\.com\/g\/g-p-[a-z0-9-]+(?:\/[^\s"'<>),;}]*)?/gi, "[redacted-project-url]")
+    .replace(/\/g\/g-p-[a-z0-9-]+(?:\/[^\s"'<>),;}]*)?/gi, "/g/[redacted-project]")
+    .replace(/\bg-p-[a-z0-9][a-z0-9-]{7,127}\b/gi, "[redacted-project-id]")
     .replace(/tunnel_[a-f0-9]{32}/g, "[tunnel-id]")
     .replace(/\bsk-[A-Za-z0-9_-]{12,}\b/g, "[runtime-key]")
     .replace(/\bBearer\s+[A-Za-z0-9._~-]{20,}\b/gi, "Bearer [redacted]");
@@ -46,7 +49,7 @@ function sanitizeForExport(value, seen = new WeakSet()) {
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,
-      /^(?:prompt|response|html|dom|content|visibleRows|sidebarRows|sidebarTitles|conversationTitle|conversationTitles|chatTitle|chatTitles)$/i.test(key)
+      /^(?:prompt|response|html|dom|content|visibleRows|sidebarRows|sidebarTitles|conversationTitle|conversationTitles|chatTitle|chatTitles|projectTarget|accountKey)$/i.test(key)
         ? "[redacted]"
         : sanitizeForExport(item, seen),
     ]),
@@ -114,7 +117,7 @@ function sanitize(value, seen = new WeakSet()) {
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,
-      /(?:authorization|cookie|runtimeKey|controlToken)/i.test(key)
+      /(?:authorization|cookie|runtimeKey|controlToken|accountKey|projectTarget)/i.test(key)
         ? "[redacted]"
         : sanitize(item, seen),
     ]),

@@ -5,6 +5,7 @@ const path = require("node:path");
 const { spawn } = require("node:child_process");
 const { writePrivateFileAtomic } = require("./atomic-file.cjs");
 const { redactText } = require("./logging.cjs");
+const { validateProjectPageUrl } = require("./project-target.cjs");
 const {
   DETACH_OWNED_CHILD,
   processRunning,
@@ -207,6 +208,17 @@ function validateConfig(config, descriptorPath, platform = process.platform, lau
   }
   if (config.browserInteractionMode !== "automatic" && config.browserInteractionMode !== "manual") {
     throw new Error("Runtime configuration has an invalid browser interaction mode");
+  }
+  if (config.projectTarget !== undefined) {
+    const target = config.projectTarget;
+    if (!target || typeof target !== "object" || Array.isArray(target) ||
+      typeof target.url !== "string" || typeof target.accountKey !== "string" ||
+      !/^[a-f0-9]{64}$/.test(target.accountKey)) {
+      throw new Error("Runtime configuration has an invalid ChatGPT Project target");
+    }
+    try { validateProjectPageUrl(target.url); } catch {
+      throw new Error("Runtime configuration has an invalid ChatGPT Project target");
+    }
   }
   if (config.subagentProtocol !== undefined
     && config.subagentProtocol !== "compatibility-v1"

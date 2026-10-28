@@ -79,6 +79,8 @@ Setup options:
   --auto-approve-tool-calls    Opt in to per-call browser clicks on "Allow once" prompts
   --bigger-context             Enable experimental adaptive 1/2/6-message context
   --fresh-conversation         Start each automatic turn in a fresh browser chat
+  --project-target-file PATH   Private launcher-only existing Project selection
+  --no-project-target          Disable Project routing (does not remove any chats)
   --retained-conversation      Reuse the browser chat between turns (default)
   --composer-predictions       Enable next-message suggestions using GPT-6 Sol Medium (default)
   --no-composer-predictions    Disable next-message suggestions for Web models
@@ -315,6 +317,11 @@ async function setupCommand(args: string[]): Promise<void> {
   const skillAttachments = takeFlag(args, "--skill-attachments");
   const inlineSkills = takeFlag(args, "--inline-skills");
   if (skillAttachments && inlineSkills) throw new Error("Choose --skill-attachments or --inline-skills");
+  const projectTargetFile = takeOption(args, "--project-target-file");
+  const noProjectTarget = takeFlag(args, "--no-project-target");
+  if (projectTargetFile && noProjectTarget) throw new Error("Choose --project-target-file or --no-project-target");
+  if (projectTargetFile) options.projectTargetFile = projectTargetFile;
+  if (noProjectTarget) options.clearProjectTarget = true;
   const freshConversation = takeFlag(args, "--fresh-conversation");
   const retainedConversation = takeFlag(args, "--retained-conversation");
   if (freshConversation && retainedConversation) {

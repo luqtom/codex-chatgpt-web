@@ -1717,6 +1717,7 @@ function SettingsSurface({
   const [integrationRemoved, setIntegrationRemoved] = useState(false);
   const currentPluginName = snapshot.connectorNames[snapshot.state.browserInteractionMode];
   const [nameSuffix, setNameSuffix] = useState(currentPluginName.slice(6));
+  const [projectUrl, setProjectUrl] = useState("");
   const [confirmNameChange, setConfirmNameChange] = useState(false);
   const proposedName = `Codex ${nameSuffix.trim()}`;
   useEffect(() => {
@@ -1804,6 +1805,18 @@ function SettingsSurface({
     setError(null);
     try {
       updateState(await api!.setAutoApproveToolCalls(enabled));
+    } catch (cause) {
+      setError(messageOf(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const updateProjectTarget = async (url: string | null) => {
+    setBusy(true);
+    setError(null);
+    try {
+      updateState(await api!.setChatGptProjectTarget(url));
+      setProjectUrl("");
     } catch (cause) {
       setError(messageOf(cause));
     } finally {
@@ -1939,6 +1952,29 @@ function SettingsSurface({
             disabled={busy || snapshot.state.browserInteractionMode === "manual" || !snapshot.state.coreSetupComplete}
             onChange={(checked) => void setSkillAttachments(checked)}
           />
+        </SettingRow>
+        <SettingRow label="ChatGPT Project" body={snapshot.state.browserInteractionMode === "manual"
+          ? "Zero Risk: open and verify the chosen Project manually before sending."
+          : "Optional: choose an existing Project for new Codex and subagent chats. Failed checks never fall back to personal history."}>
+          <div className="plugin-name-setting">
+            <input
+              aria-label="ChatGPT Project URL"
+              autoComplete="off"
+              disabled={busy || !snapshot.state.coreSetupComplete || snapshot.state.browserInteractionMode === "manual"}
+              maxLength={512}
+              onChange={event => setProjectUrl(event.target.value)}
+              placeholder="https://chatgpt.com/g/.../project"
+              type="url"
+              value={projectUrl}
+            />
+            <p>{snapshot.state.projectTargetConfigured ? "Project routing configured" : "Project routing is off"}</p>
+            <SecondaryButton disabled={busy || !snapshot.state.coreSetupComplete || !projectUrl.trim()
+              || snapshot.state.browserInteractionMode === "manual"}
+              onClick={() => void updateProjectTarget(projectUrl.trim())}>Use existing Project</SecondaryButton>
+            {snapshot.state.projectTargetConfigured ? <SecondaryButton
+              disabled={busy || !snapshot.state.coreSetupComplete}
+              onClick={() => void updateProjectTarget(null)}>Turn off Project routing</SecondaryButton> : null}
+          </div>
         </SettingRow>
         <SettingRow body={snapshot.state.browserInteractionMode === "manual"
           ? copy.manualFreshConversationUnavailable : copy.freshConversationBody} label={copy.freshConversation}>
