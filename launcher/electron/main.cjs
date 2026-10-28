@@ -530,11 +530,11 @@ function syncBrowserPreferences(stateStore, config) {
   const target = config?.projectTarget;
   const targetKey = target && typeof target.url === "string" && typeof target.accountKey === "string"
     ? `${target.accountKey}\0${target.url}` : null;
-  const projectChanged = previousProjectTargetKey !== undefined && previousProjectTargetKey !== targetKey;
-  previousProjectTargetKey = targetKey;
   const autoApproveToolCalls = config?.autoApproveToolCalls === true;
   const current = stateStore.read();
   if (runtimeHost?.currentOperation()) return current;
+  const projectChanged = previousProjectTargetKey !== undefined && previousProjectTargetKey !== targetKey;
+  previousProjectTargetKey = targetKey;
   const retentionChanged = current.experimentalFreshConversationPerTurn !== enabled
     || current.experimentalBiggerContext !== biggerContextEnabled
     || projectChanged;
