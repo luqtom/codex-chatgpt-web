@@ -1271,7 +1271,7 @@ class RuntimeHost {
       ...(development ? [] : ["--replace-codex-route", "--restart-service"]),
       ...(url ? ["--project-target-file", temporaryPath] : ["--no-project-target"]),
     ];
-    if (current.config?.autoApproveToolCalls === true) args.push("--auto-approve-tool-calls");
+    if (!development && current.config?.autoApproveToolCalls === true) args.push("--auto-approve-tool-calls");
     try {
       if (url) writePrivateFileAtomic(temporaryPath, `${JSON.stringify({ url, accountKey })}\n`);
       const options = {
