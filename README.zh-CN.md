@@ -2,15 +2,7 @@
   <img src="assets/readme/hero.svg" width="960" alt="切换到网页版模型，继续使用 Codex。你的 ChatGPT 订阅。你的工作流。充分发挥模型能力。">
 </p>
 
-<p align="center">
-  <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/download/v6.1.14/codex-web-gpt-6.1.14-win-x64.exe"><img src="assets/readme/download-windows.svg" width="224" height="64" alt="Windows · x64"></a>&nbsp;
-  <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/download/v6.1.14/codex-web-gpt-6.1.14-mac-arm64.dmg"><img src="assets/readme/download-macos.svg" width="224" height="64" alt="macOS · Apple silicon"></a>&nbsp;
-  <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/download/v6.1.14/codex-web-gpt-6.1.14-linux-x64.AppImage"><img src="assets/readme/download-linux.svg" width="224" height="64" alt="Linux · x64"></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/download/v6.1.14/codex-web-gpt-6.1.14-mac-x64.dmg">macOS Intel</a> · <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/latest">所有版本</a>
-</p>
+> **Fork of [miuuyy/codex-chatgpt-web](https://github.com/miuuyy/codex-chatgpt-web).** Upstream installers and release downloads do not contain this fork's changes. Install from source: see the [English Get started](README.md#get-started).
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a>
@@ -21,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="#get-started">开始使用</a> · <a href="https://github.com/miuuyy/codex-chatgpt-web/releases">更新内容</a> · <a href="docs/architecture.md">架构</a> · <a href="TROUBLESHOOTING.md">故障排除</a>
+  <a href="#get-started">开始使用</a> · <a href="https://github.com/luqtom/codex-chatgpt-web/commits/main">更新内容</a> · <a href="docs/architecture.md">架构</a> · <a href="TROUBLESHOOTING.md">故障排除</a>
 </p>
 
 在 Codex 原生模型选择器中使用账户可用的 ChatGPT 网页版模型，包括 Pro。使用 ChatGPT 网页版的独立额度，不消耗 Work 或 Codex 额度。保留原有的界面、任务、图片和流式输出。
@@ -34,31 +26,11 @@
 
 **可用模型：** Free/Go → **Luna / Think**；具有推理控制选项的账户 → **Instant–High**，并按实际可用状态提供 **Extra High** 和 **Pro**。启动器会自动检测账户可用的模型。
 
-1. **安装启动器**：点击上方对应系统的下载按钮。
+1. **Install from source** (Git + Bun 1.4.0, `git clone https://github.com/luqtom/codex-chatgpt-web.git`, `bun run app`): see [Get started](README.md#get-started).
 2. **登录 ChatGPT**：在内置浏览器中登录并运行浏览器冒烟测试。
 3. **安装模型**：重启一次 Codex。在自动模式下，选择名称以 **(Web)** 结尾的模型。Pro 版本使用独立条目，Sol 推理等级通过 Effort 选择。Zero Risk 保留专用条目。
 4. **需要使用工具编程时**：打开启动器中的 **MCP**，完成下方的完整 harness 设置。
 
-应用已包含浏览器和运行时，无需另外安装 Chrome、Node 或 Bun。
-
-<details>
-<summary><strong>命令行安装、更新与修复</strong></summary>
-
-更新前请退出启动器。以下安装脚本会选择正确的平台和架构、验证发布的校验和，并保留 ChatGPT 配置文件和启动器设置。
-
-**macOS / Linux**
-
-```bash
-curl -fsSL https://github.com/miuuyy/codex-chatgpt-web/releases/latest/download/install-launcher.sh | sh
-```
-
-**Windows PowerShell**
-
-```powershell
-irm https://github.com/miuuyy/codex-chatgpt-web/releases/latest/download/install-launcher.ps1 | iex
-```
-
-</details>
 
 <details>
 <summary><strong>模型、模式与 MCP 设置</strong></summary>
@@ -162,7 +134,7 @@ codex-chatgpt-web subagents native
 <a id="development"></a>
 
 ```bash
-git clone https://github.com/miuuyy/codex-chatgpt-web.git && \
+git clone https://github.com/luqtom/codex-chatgpt-web.git && \
 cd codex-chatgpt-web && \
 bun run app
 ```
@@ -195,6 +167,6 @@ bun run app:package
 
 ---
 
-[故障排除](TROUBLESHOOTING.md) · [安全](SECURITY.md) · [贡献](CONTRIBUTING.md) · [MIT 许可证](LICENSE) · [CI](https://github.com/miuuyy/codex-chatgpt-web/actions/workflows/ci.yml)
+[故障排除](TROUBLESHOOTING.md) · [安全](SECURITY.md) · [贡献](CONTRIBUTING.md) · [MIT 许可证](LICENSE) · [CI](https://github.com/luqtom/codex-chatgpt-web/actions/workflows/ci.yml)
 
 我的另一个项目：<img src="assets/readme/persona-voice.svg" width="20" height="20" alt=""> [ChatGPT Persona Voice](https://github.com/miuuyy/ChatGPT-Persona-Voice) — 为 ChatGPT 和 Codex 提供本地、近实时的自定义声音。

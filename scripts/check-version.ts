@@ -35,11 +35,11 @@ const expected = [
 for (const [path, needle] of expected) {
   if (!readFileSync(resolve(root, path), "utf8").includes(needle)) throw new Error(`${path} is not synchronized to ${packageVersion}`);
 }
+// This fork installs from source; READMEs must not send users to upstream release downloads.
 for (const path of ["README.md", "README.zh-CN.md", "README.ja.md", "README.ko.md"]) {
   const readme = readFileSync(resolve(root, path), "utf8");
-  for (const target of ["win-x64.exe", "mac-arm64.dmg", "mac-x64.dmg", "linux-x64.AppImage"]) {
-    const download = `/releases/download/v${packageVersion}/codex-web-gpt-${packageVersion}-${target}`;
-    if (!readme.includes(download)) throw new Error(`${path} download for ${target} is not synchronized to ${packageVersion}`);
+  if (readme.includes("github.com/miuuyy/codex-chatgpt-web/releases")) {
+    throw new Error(`${path} must not link upstream release downloads or installers`);
   }
 }
 const releaseWorkflow = readFileSync(resolve(root, ".github/workflows/release.yml"), "utf8");
