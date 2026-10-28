@@ -2,15 +2,7 @@
   <img src="assets/readme/hero.svg" width="960" alt="Switch to web models. Stay in Codex. Your ChatGPT plan. Your workflow. Maximum capabilities.">
 </p>
 
-<p align="center">
-  <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/download/v6.1.14/codex-web-gpt-6.1.14-win-x64.exe"><img src="assets/readme/download-windows.svg" width="224" height="64" alt="Windows · x64"></a>&nbsp;
-  <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/download/v6.1.14/codex-web-gpt-6.1.14-mac-arm64.dmg"><img src="assets/readme/download-macos.svg" width="224" height="64" alt="macOS · Apple silicon"></a>&nbsp;
-  <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/download/v6.1.14/codex-web-gpt-6.1.14-linux-x64.AppImage"><img src="assets/readme/download-linux.svg" width="224" height="64" alt="Linux · x64"></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/download/v6.1.14/codex-web-gpt-6.1.14-mac-x64.dmg">macOS Intel</a> · <a href="https://github.com/miuuyy/codex-chatgpt-web/releases/latest">All releases</a>
-</p>
+> **This is a fork of [miuuyy/codex-chatgpt-web](https://github.com/miuuyy/codex-chatgpt-web)** with optional ChatGPT Project routing. The upstream installers and release downloads do **not** contain this fork's changes, so install it from source as described in [Get started](#get-started).
 
 <p align="center">
   <a href="README.md">English</a> · <a href="README.zh-CN.md">简体中文</a> · <a href="README.ja.md">日本語</a> · <a href="README.ko.md">한국어</a>
@@ -21,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="#get-started">Get started</a> · <a href="https://github.com/miuuyy/codex-chatgpt-web/releases">What’s new</a> · <a href="docs/architecture.md">Architecture</a> · <a href="TROUBLESHOOTING.md">Troubleshooting</a>
+  <a href="#get-started">Get started</a> · <a href="https://github.com/luqtom/codex-chatgpt-web/commits/main">What’s new</a> · <a href="docs/architecture.md">Architecture</a> · <a href="TROUBLESHOOTING.md">Troubleshooting</a>
 </p>
 
 Use the ChatGPT Web models available on your account, including Pro, from Codex’s native model picker—with ChatGPT Web’s separate usage limits, without spending your Work or Codex quota. Keep the same interface, tasks, images, and streaming.
@@ -34,28 +26,49 @@ Full harness mode connects ChatGPT to the current task’s files, terminal, tool
 
 **Available models:** Free/Go → **Luna / Think**. Paid accounts → **GPT-6 Sol** and **GPT-5.6 Sol**, with **Instant–High**, plus **Extra High** and **Pro** when available. Each version has its own entry; existing GPT-5.6 chats keep GPT-5.6. Availability depends on your account and workspace.
 
-1. **Install the launcher** using the download for your system above.
-2. **Sign in to ChatGPT** in the embedded browser and run the browser smoke test.
-3. **Install models** and restart Codex once. In automatic mode, choose a model ending in **(Web)**. Pro versions have separate entries; Sol reasoning is selected through Effort. Zero Risk keeps its dedicated entry.
-4. **For coding with tools**, open **MCP** in the launcher and complete the Full harness setup below.
+1. **Install Git and [Bun 1.4.0](https://bun.sh)**, then open a new terminal.
+2. **Clone this fork and build the launcher installer** on the system you will run it on (cross-packaging is disabled):
 
-The app includes its browser and runtime. No separate Chrome, Node, or Bun installation is needed.
+   **Windows PowerShell**
+
+   ```powershell
+   winget install Git.Git
+   iex "& {$(irm https://bun.sh/install.ps1)} -Version 1.4.0"
+   git clone https://github.com/luqtom/codex-chatgpt-web.git
+   cd codex-chatgpt-web
+   bun install --frozen-lockfile
+   bun install --frozen-lockfile --cwd launcher
+   bun run app:package
+   ```
+
+   **macOS / Linux**
+
+   ```bash
+   curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.0"
+   git clone https://github.com/luqtom/codex-chatgpt-web.git && \
+   cd codex-chatgpt-web && \
+   bun install --frozen-lockfile && \
+   bun install --frozen-lockfile --cwd launcher && \
+   bun run app:package
+   ```
+
+3. **Install the launcher** from `launcher/artifacts/` (`codex-web-gpt-<version>-win-x64.exe`, `.dmg` or `.AppImage`). The build is unsigned, so SmartScreen or Gatekeeper may warn.
+4. **Sign in to ChatGPT** in the embedded browser and run the browser smoke test.
+5. **Install models** and fully restart Codex once. In automatic mode, choose a model ending in **(Web)**. Pro versions have separate entries; Sol reasoning is selected through Effort. Zero Risk keeps its dedicated entry.
+6. **For coding with tools**, open **MCP** in the launcher and complete the Full harness setup below.
+7. **Optional:** set a ChatGPT Project target in Launcher → Settings (see [ChatGPT Project routing](docs/fork/PROJECT_ROUTING.md)).
+
+`bun run app` starts the isolated **DEV** launcher (badge "DEV", button "Refresh profile"). It never installs a Codex route, so **(Web)** models do not appear in Codex from it. Do not use the upstream `.exe`/`.dmg`/`.AppImage` downloads or `install-launcher` scripts for this fork: they install the original project without these changes.
 
 <details>
-<summary><strong>Terminal install, updates & repair</strong></summary>
+<summary><strong>Updates & packaging</strong></summary>
 
-Quit the launcher before updating. These installers select the platform and architecture, verify the published checksums, and preserve your ChatGPT profile and launcher settings.
-
-**macOS / Linux**
+Quit the launcher, pull the latest fork, rebuild, and run the new installer from `launcher/artifacts/`. Your ChatGPT profile and launcher settings are preserved.
 
 ```bash
-curl -fsSL https://github.com/miuuyy/codex-chatgpt-web/releases/latest/download/install-launcher.sh | sh
-```
-
-**Windows PowerShell**
-
-```powershell
-irm https://github.com/miuuyy/codex-chatgpt-web/releases/latest/download/install-launcher.ps1 | iex
+cd codex-chatgpt-web
+git pull
+bun run app:package
 ```
 
 </details>
@@ -175,12 +188,12 @@ and workspace policies; it does not bypass authentication or access controls.
 <a id="development"></a>
 
 ```bash
-git clone https://github.com/miuuyy/codex-chatgpt-web.git && \
+git clone https://github.com/luqtom/codex-chatgpt-web.git && \
 cd codex-chatgpt-web && \
 bun run app
 ```
 
-This source path requires Bun 1.4.0. The command installs locked dependencies and opens the app.
+This source path requires Bun 1.4.0. The command installs locked dependencies and opens the isolated DEV launcher, which does not install a Codex route; build an installer with `bun run app:package` for normal use.
 
 ```bash
 bun run app
@@ -208,7 +221,7 @@ bun run app:package
 
 ---
 
-[Troubleshooting](TROUBLESHOOTING.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [MIT license](LICENSE) · [CI](https://github.com/miuuyy/codex-chatgpt-web/actions/workflows/ci.yml)
+[Troubleshooting](TROUBLESHOOTING.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [MIT license](LICENSE) · [CI](https://github.com/luqtom/codex-chatgpt-web/actions/workflows/ci.yml)
 
 Also by me: <img src="assets/readme/persona-voice.svg" width="20" height="20" alt=""> [ChatGPT Persona Voice](https://github.com/miuuyy/ChatGPT-Persona-Voice) — local, near-real-time custom voices for ChatGPT and Codex.
 
