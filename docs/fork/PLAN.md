@@ -12,3 +12,10 @@ Objective: route future Codex task and subagent ChatGPT Web conversations into o
 8. **Merge/release — PENDING separate explicit approval**. Maintain Draft PR #1.
 
 Invariants: no hidden fallback to ordinary history when Project routing is enabled, no automatic chat deletion/moving, no private Project IDs or auth artifacts in GitHub. Project instructions/memory influence model context; Projects aren't a sandbox boundary. Rollback is disabling the feature or reverting the topic branch, not removing chat history.
+
+## Immediate remaining work (prioritized)
+
+1. Enable/verify the fork's Actions CI matrix and fix `bun run verify` issues before calling the feature working.
+2. Develop a safe, durable Project conversation binding across browser-helper restarts, without adopting an unrelated chat inside the same Project. An unavailable binding must remain fail-closed.
+3. Validate the strict Project URL/DOM route using an authorized isolated DEV ChatGPT session; prove actual membership after a physical Send and verify no fallback to ordinary history.
+4. Verify package builds, image/streaming/MCP/compaction, both subagent protocols, and update documentation. Keep Draft until required PASS gates are met.

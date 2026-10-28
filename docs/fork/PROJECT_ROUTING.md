@@ -22,3 +22,7 @@ Publicly documented third-party examples show routes of the forms `/g/g-p-<id>[-
 - https://github.com/openai/codex/issues/50161
 
 Required before release: Bun `verify` + full typecheck, Electron smoke and packaging, Linux/Windows/macOS CI, DOM fixtures gathered with explicit DEV session approval, and account-bound E2E with real ChatGPT Project membership confirmed. No official Projects API is claimed. No live session has been used by this PR.
+
+## Known fail-closed limitation
+
+Retained Project conversation identity is currently pinned in the browser helper's process memory. If that helper restarts while a tab is retained, the next continuation may be rejected instead of sending to a potentially wrong conversation. This is intentional until the launcher provides durable, verifiable conversation ownership across helper restarts. Do not substitute the current URL for a previously verified conversation identity.

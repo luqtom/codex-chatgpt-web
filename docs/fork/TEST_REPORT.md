@@ -30,3 +30,12 @@ Implemented on PR branch (default OFF): Settings selection of an existing Projec
 Potential deployment blocker: GitHub Actions appears not to have started workflows in this fork; inspect/enable the repository's Actions configuration using an authorized GitHub UI/account or available administrative interface. Do not describe CI as PASS when there are no jobs.
 
 Rollback: disable optional setting after active turns finish or revert topic branch changes. Both actions leave existing chats untouched.
+
+## Additional regression work — 2026-10-28
+
+- **PASS (remote source contract):** verify that `beforePhysicalSend` runs after the launcher-helper activation acknowledgement and before `sendButton.press("Enter")`. Both ordinary and multipart code paths supply the guard (2 paths / 4 project-check call sites). Added `tests/chatgpt-project-send-fence.test.ts` (Bun: **NOT RUN**).
+- **PASS (remote source contract):** change of selected Project does not release completed chat leases before the new runtime configuration has committed. Added regression in `launcher/tests/project-target.test.cjs` (Node launcher suite: **NOT RUN**).
+- **PASS (direct isolated execution with mocked platform URL parser):** GitHub launcher CJS Project URL validator accepts canonical page and rejects six invalid URL variants; log redaction on real GitHub CJS code removes Project identifier and private configured account keys.
+- **PASS (local prior PoC re-run):** 7/7 routing policy, 4/4 authenticated account, 11/11 simulated browser observations, isolated TypeScript and anchor checks. The PoC and remote PR are not identical; this is **not** a full PR test.
+- **NOT RUN:** GitHub Actions still reports zero runs/checks as of the most recent check. Bun 1.4.0 and the full dependency checkout remain unavailable in this environment.
+- **KNOWN LIMITATION:** helper process restart loses the in-memory `retainedProjectConversations` map, so some already retained Project chats fail closed rather than resume. Restoring exact durable chat ownership safely requires an additional launcher lease contract and E2E; never infer identity from URL alone.
