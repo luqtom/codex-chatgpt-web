@@ -28,3 +28,29 @@ test("unverified account fails without exposing user data", async () => {
   await assert.rejects(authenticatedProjectAccountKey(fetchSession),
     error=>!error.message.includes("sensitive-user") && !error.message.includes("secret-workspace"));
 });
+test("launcher diagnostics never expose selected Project URLs or account fingerprints", () => {
+  const { redactText, redactExportText, sanitizeForExport } = require("../electron/logging.cjs");
+  const selected = "https://chatgpt.com/g/g-p-1234567890123456/project";
+  const chat = "https://chatgpt.com/g/g-p-1234567890123456/c/12345678-1234-1234-1234-123456789abc";
+  for (const redact of [redactText, redactExportText]) {
+    assert.doesNotMatch(redact("Failed to open " + selected), /g-p-1234567890123456/);
+    assert.doesNotMatch(redact("Failed to open " + chat), /g-p-1234567890123456/);
+  }
+  const exported = sanitizeForExport({
+    projectTarget: { url: selected, accountKey: "a".repeat(64) }, status: "failure",
+  });
+  assert.equal(exported.projectTarget, "[redacted]");
+  assert.equal(exported.status, "failure");
+});
+test("Project selection may not retire retained conversations before a successful setup", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const main = fs.readFileSync(path.join(__dirname, "..", "electron", "main.cjs"), "utf8");
+  const start = main.indexOf('handle("launcher:project-target"');
+  const end = main.indexOf('handle("launcher:fresh-conversation-per-turn"', start);
+  assert.ok(start > 0 && end > start, "launcher Project setting handler should exist");
+  const handler = main.slice(start, end);
+  assert.match(handler, /await runtimeHost\.setChatGptProjectTarget\(url, accountKey\)/);
+  assert.doesNotMatch(handler, /releaseRetainedConversation\(/, "retained chats must survive setup failure");
+  assert.match(handler, /syncBrowserPreferences\(stateStore, runtimeHost\.runtimeConfigSnapshot\(\)\.config\)/);
+});

@@ -979,11 +979,9 @@ function registerIpc({ logger, stateStore }) {
         ? await authenticatedProjectAccountKey(
           browserHost.view.webContents.session.fetch.bind(browserHost.view.webContents.session))
         : null;
-      // Retire completed browser surfaces only. ChatGPT conversations remain stored.
-      const retained = new Set([...browserHost.turnTabs.values()]
-        .filter(tab => tab.status === "ready" && tab.conversationKey)
-        .map(tab => tab.conversationKey));
-      for (const key of retained) releaseRetainedConversation(browserHost, key);
+      // Commit first. A failed setup must not destroy retained tabs or task continuity.
+      // syncBrowserPreferences compares the committed target and retires only completed
+      // leases on a successful change, without moving/deleting any ChatGPT conversations.
       await runtimeHost.setChatGptProjectTarget(url, accountKey);
       return syncBrowserPreferences(stateStore, runtimeHost.runtimeConfigSnapshot().config);
     });
