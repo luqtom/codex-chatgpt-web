@@ -27,7 +27,7 @@
 **可用模型：** Free/Go → **Luna / Think**；具有推理控制选项的账户 → **Instant–High**，并按实际可用状态提供 **Extra High** 和 **Pro**。启动器会自动检测账户可用的模型。
 
 1. **Install Git and [Bun 1.4.0](https://bun.sh)**, then open a new terminal.
-2. **Clone this fork and start the launcher:**
+2. **Clone this fork and build the launcher installer** on the system you will run it on (cross-packaging is disabled):
 
    **Windows PowerShell**
 
@@ -36,7 +36,9 @@
    iex "& {$(irm https://bun.sh/install.ps1)} -Version 1.4.0"
    git clone https://github.com/luqtom/codex-chatgpt-web.git
    cd codex-chatgpt-web
-   bun run app
+   bun install --frozen-lockfile
+   bun install --frozen-lockfile --cwd launcher
+   bun run app:package
    ```
 
    **macOS / Linux**
@@ -45,29 +47,29 @@
    curl -fsSL https://bun.sh/install | bash -s "bun-v1.4.0"
    git clone https://github.com/luqtom/codex-chatgpt-web.git && \
    cd codex-chatgpt-web && \
-   bun run app
+   bun install --frozen-lockfile && \
+   bun install --frozen-lockfile --cwd launcher && \
+   bun run app:package
    ```
 
-   `bun run app` installs the locked dependencies and opens the launcher. Use the same command to start it later.
-3. **Sign in to ChatGPT** in the embedded browser and run the browser smoke test.
-4. **Install models** and restart Codex once. In automatic mode, choose a model ending in **(Web)**. Pro versions have separate entries; Sol reasoning is selected through Effort. Zero Risk keeps its dedicated entry.
-5. **For coding with tools**, open **MCP** in the launcher and complete the Full harness setup below.
-6. **Optional:** set a ChatGPT Project target in Launcher → Settings (see [ChatGPT Project routing](docs/fork/PROJECT_ROUTING.md)).
+3. **Install the launcher** from `launcher/artifacts/` (`codex-web-gpt-<version>-win-x64.exe`, `.dmg` or `.AppImage`). The build is unsigned, so SmartScreen or Gatekeeper may warn.
+4. **Sign in to ChatGPT** in the embedded browser and run the browser smoke test.
+5. **Install models** and fully restart Codex once. In automatic mode, choose a model ending in **(Web)**. Pro versions have separate entries; Sol reasoning is selected through Effort. Zero Risk keeps its dedicated entry.
+6. **For coding with tools**, open **MCP** in the launcher and complete the Full harness setup below.
+7. **Optional:** set a ChatGPT Project target in Launcher → Settings (see [ChatGPT Project routing](docs/fork/PROJECT_ROUTING.md)).
 
-Do not use the upstream `.exe`/`.dmg`/`.AppImage` downloads or `install-launcher` scripts for this fork: they install the original project without these changes.
+`bun run app` starts the isolated **DEV** launcher (badge "DEV", button "Refresh profile"). It never installs a Codex route, so **(Web)** models do not appear in Codex from it. Do not use the upstream `.exe`/`.dmg`/`.AppImage` downloads or `install-launcher` scripts for this fork: they install the original project without these changes.
 
 <details>
 <summary><strong>Updates & packaging</strong></summary>
 
-Quit the launcher before updating, then pull the latest fork and start it again. Your ChatGPT profile and launcher settings are preserved.
+Quit the launcher, pull the latest fork, rebuild, and run the new installer from `launcher/artifacts/`. Your ChatGPT profile and launcher settings are preserved.
 
 ```bash
 cd codex-chatgpt-web
 git pull
-bun run app
+bun run app:package
 ```
-
-To build your own installable package from this fork, run `bun run app:package`.
 
 </details>
 
