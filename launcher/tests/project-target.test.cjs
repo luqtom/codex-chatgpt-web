@@ -54,3 +54,23 @@ test("Project selection may not retire retained conversations before a successfu
   assert.doesNotMatch(handler, /releaseRetainedConversation\(/, "retained chats must survive setup failure");
   assert.match(handler, /syncBrowserPreferences\(stateStore, runtimeHost\.runtimeConfigSnapshot\(\)\.config\)/);
 });
+
+test("Project indicator is optional by default, persists when enabled and rejects corrupt state", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const os = require("node:os");
+  const { createStateStore } = require("../electron/state.cjs");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codex-project-indicator-"));
+  const file = path.join(root, "state.json");
+  try {
+    const store = createStateStore(file);
+    assert.equal(Object.hasOwn(store.read(), "projectTargetConfigured"), false);
+    store.update({ projectTargetConfigured: true });
+    assert.equal(createStateStore(file).read().projectTargetConfigured, true);
+    const broken = { ...store.read(), projectTargetConfigured: "true" };
+    fs.writeFileSync(file, JSON.stringify(broken));
+    assert.equal(Object.hasOwn(createStateStore(file).read(), "projectTargetConfigured"), false);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

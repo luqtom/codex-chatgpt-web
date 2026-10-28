@@ -20,7 +20,6 @@ const DEFAULT_STATE = Object.freeze({
   composerPredictionsEnabled: true,
   experimentalSkillAttachments: false,
   experimentalFreshConversationPerTurn: false,
-  projectTargetConfigured: false,
   zeroRiskProEnabled: false,
   browserSmokePassed: false,
   browserSmokeVersion: null,
@@ -57,12 +56,14 @@ function readState(filePath) {
       "composerPredictionsEnabled",
       "experimentalSkillAttachments",
       "experimentalFreshConversationPerTurn",
-      "projectTargetConfigured",
       "zeroRiskProEnabled",
       "browserSmokePassed",
       "sidebarOpen",
     ]) {
       if (typeof state[key] !== "boolean") state[key] = DEFAULT_STATE[key];
+    }
+    if (state.projectTargetConfigured !== undefined && typeof state.projectTargetConfigured !== "boolean") {
+      delete state.projectTargetConfigured;
     }
     if (state.browserInteractionMode !== "automatic" && state.browserInteractionMode !== "manual") {
       state.browserInteractionMode = DEFAULT_STATE.browserInteractionMode;

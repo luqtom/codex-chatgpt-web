@@ -110,8 +110,6 @@ let catalogVerificationTimer = null;
 let catalogVerificationInFlight = false;
 let updateController = null;
 let limitsController = null;
-// In-memory only: invalidate retained tabs on project/account changes, including CLI setup.
-let previousProjectTargetKey;
 
 function findFreePort() {
   return new Promise((resolve, reject) => {
@@ -533,14 +531,19 @@ function syncBrowserPreferences(stateStore, config) {
   const autoApproveToolCalls = config?.autoApproveToolCalls === true;
   const current = stateStore.read();
   if (runtimeHost?.currentOperation()) return current;
+  // Track the selected Project per state store, not through a module global. This
+  // survives repeated observations without mixing isolated launcher/test stores.
+  const targetsByStore = syncBrowserPreferences.targetsByStore ??
+    (syncBrowserPreferences.targetsByStore = new WeakMap());
+  const previousProjectTargetKey = targetsByStore.get(stateStore);
   const projectChanged = previousProjectTargetKey !== undefined && previousProjectTargetKey !== targetKey;
-  previousProjectTargetKey = targetKey;
+  targetsByStore.set(stateStore, targetKey);
   const retentionChanged = current.experimentalFreshConversationPerTurn !== enabled
     || current.experimentalBiggerContext !== biggerContextEnabled
     || projectChanged;
   if (!retentionChanged && current.composerPredictionsEnabled === composerPredictionsEnabled
     && current.autoApproveToolCalls === autoApproveToolCalls
-    && current.projectTargetConfigured === projectTargetConfigured
+    && (current.projectTargetConfigured === true) === projectTargetConfigured
     && current.biggerContextAvailable === biggerContextAvailable) return current;
   // Runtime restarts leave browser views alive. Retire completed chats when their
   // persistence policy changes, including changes made by the CLI.
