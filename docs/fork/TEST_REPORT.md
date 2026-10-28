@@ -1,7 +1,7 @@
 # ChatGPT Project routing — current test report
 
 Date: 2026-10-28. Draft PR: https://github.com/luqtom/codex-chatgpt-web/pull/1
-Fork `main` / upstream base: `cfeaf04` (v6.1.14). Topic head after DEV fix: `fe35600`.
+Fork `main` / upstream base: `cfeaf04` (v6.1.14). Topic head: see Draft PR branch (do not hardcode a self-referential commit).
 
 ## Code and scope
 
@@ -11,13 +11,13 @@ Implemented on PR branch (default OFF): Settings selection of an existing Projec
 
 | Test | Status | Grounded evidence |
 |---|---|---|
-| Core routing policy (local overlay) | **PASS** | 7/7 Node 22.16 `--experimental-strip-types --test` |
-| Launcher account/Project page contract (local overlay) | **PASS** | 4/4 `node --test` |
-| Browser guard simulated Page (local overlay) | **PASS** | 11/11; no real browser |
+| Core routing policy (local overlay) | **PASS** | 7/7 retested 2026-10-28 with Node 22.16 `--experimental-strip-types --test` |
+| Launcher account/Project page contract (local overlay) | **PASS** | 4/4 retested 2026-10-28 using `node --test` |
+| Browser guard simulated Page (local overlay) | **PASS** | 11/11 retested 2026-10-28; no real browser |
 | Isolated strict TypeScript on new policy + guard (local overlay) | **PASS** | `node scripts/test-isolated-types.mjs` with facade types |
 | Staged integration anchors, syntax and drift handling (local overlay) | **PASS (synthetic)** | 65 exact source replacements / 16 files; 8 fragment syntax checks; not a full build |
 | GitHub PR source integration and CJS syntax | **PASS (static)** | 30+ modified files; diff reviewed, seven CJS files parsed by V8, exact target anchors confirmed |
-| In-repo new browser guard test | **NOT RUN** | Code published; requires Bun/dependencies |
+| In-repo new browser guard test | **NOT RUN** | Code published (including corrected URL-drift fixture); requires Bun/dependencies |
 | Full `bun run verify` / `bun run smoke:subagents` | **NOT RUN** | Bun not present; direct clone blocked by DNS |
 | `bun run app:smoke`, `bun run app:package`, `bun run audit` | **NOT RUN** | Full Electron runtime, deps, build unavailable |
 | GitHub Actions CI (Linux, Windows, macOS) | **NOT RUN** | GitHub reports 0 runs and 0 check runs for fork PR, including after code updates |
@@ -25,7 +25,7 @@ Implemented on PR branch (default OFF): Settings selection of an existing Projec
 
 ## Outstanding risk and acceptance
 
-**Do not mark feature ready or merge/release.** Official Projects documentation confirms organizational semantics but not browser URL or DOM shape. The strict URL parser is provisional. E2E must prove actual saved Project membership, cancellation, compaction, images, streaming, account switch, access denied, helper restarts and subagents (Compatibility V1 and Native/V2). Every failure must block or preserve a previously accepted Send without replay.
+**Do not mark feature ready or merge/release.** Official Projects documentation confirms organizational semantics; independent public GitHub examples support the `/g/g-p-.../project` and `/g/g-p-.../c/...` route shapes (links in `PROJECT_ROUTING.md`), but do not verify this fork's DOM, account state or Project membership. The strict parser remains provisional. E2E must prove actual saved Project membership, cancellation, compaction, images, streaming, account switch, access denied, helper restarts and subagents (Compatibility V1 and Native/V2). Every failure must block or preserve a previously accepted Send without replay.
 
 Potential deployment blocker: GitHub Actions appears not to have started workflows in this fork; inspect/enable the repository's Actions configuration using an authorized GitHub UI/account or available administrative interface. Do not describe CI as PASS when there are no jobs.
 

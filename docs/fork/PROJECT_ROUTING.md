@@ -14,6 +14,11 @@ This is a **Draft PR / work in progress** for optionally routing Codex task and 
 
 ## Status / acceptance gates
 
-The initial commit contains the stand-alone routing policy and unit tests. It is **not connected to the launcher** and cannot yet route conversations. The remaining integration must be checked against the actual fork code, including task leasing, continuation, compaction, subagents and every physical send.
+The current Draft branch contains task-only browser-worker routing, helper feature negotiation, optional Launcher Settings, private account binding and setup, plus tests and documentation. **Integration is committed but not yet fully built/tested with Bun/Electron or validated in a real Project.**
 
-Required before release: Bun tests + full typecheck, Electron smoke, Linux/Windows/macOS CI, DOM fixtures gathered with explicit DEV session approval, and account-bound E2E with real ChatGPT Project membership confirmed. The route shape in the policy is provisional; no official Projects API is claimed. No live session is used by this PR.
+Publicly documented third-party examples show routes of the forms `/g/g-p-<id>[-<slug>]/project` and `/g/g-p-<id>[-<slug>]/c/<conversation-id>`; these examples support the strict parser's expected path structure but **do not validate UI selectors, conversation membership, or permission checks in our DEV environment**. References:
+- https://github.com/fitz-s/open-claude-gpt/blob/main/.env.example
+- https://github.com/NataTassi/chatgpt-exporter
+- https://github.com/openai/codex/issues/50161
+
+Required before release: Bun `verify` + full typecheck, Electron smoke and packaging, Linux/Windows/macOS CI, DOM fixtures gathered with explicit DEV session approval, and account-bound E2E with real ChatGPT Project membership confirmed. No official Projects API is claimed. No live session has been used by this PR.
