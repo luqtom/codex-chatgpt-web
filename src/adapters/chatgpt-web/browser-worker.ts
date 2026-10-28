@@ -3556,7 +3556,7 @@ export class ChatGptBrowserWorker {
     captureDiagnostic?: (checkpoint: string) => Promise<void>,
     abortSignal?: AbortSignal,
     externalProgress?: ChatGptTurnProgressReader,
-    submissionLifecycle?: Pick<BrowserTurn, "onSendActivated" | "onSubmitted">,
+    submissionLifecycle?: Pick<BrowserTurn, "onSendActivated" | "onSubmitted"> & { beforePhysicalSend?: () => Promise<void> },
     completionTracker?: ChatGptCompletionTracker,
     recoverObservation?: ChatGptObservationRecovery,
   ): Promise<ChatGptSubmissionEvidence> {
@@ -3582,6 +3582,10 @@ export class ChatGptBrowserWorker {
     await captureDiagnostic?.("send-ready");
     const initialToolBatchRevision = externalProgress?.snapshot().lastToolBatchRevision ?? 0;
     await submissionLifecycle?.onSendActivated?.();
+    // The launcher helper acknowledgement can take time. A fresh project/account check
+    // must follow it, immediately before the physical keypress, on the same leased page.
+    await submissionLifecycle?.beforePhysicalSend?.();
+    if (abortSignal?.aborted) throw new DOMException("ChatGPT web turn aborted", "AbortError");
     const sendAbort = new AbortController();
     const sendSignal = abortSignal
       ? AbortSignal.any([abortSignal, sendAbort.signal])
@@ -5200,6 +5204,8 @@ export class ChatGptBrowserWorker {
                 submissionRejection.begin(page);
                 await submissionRejection.captureAlertBaseline();
                 if (taskProject) await markPhysicalSendActivated();
+              }, beforePhysicalSend: async () => {
+                if (taskProject) await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
               } },
               undefined,
               launcherObservationRecovery
@@ -5391,6 +5397,8 @@ export class ChatGptBrowserWorker {
             await submissionRejection.captureAlertBaseline();
             if (taskProject) await markPhysicalSendActivated();
             else await turn.onSendActivated?.();
+          }, beforePhysicalSend: async () => {
+            if (taskProject) await verifyChatGptProjectTurnPage(page, taskProject, "before-send", projectConversationId);
           } },
           completionTracker,
           launcherObservationRecovery
