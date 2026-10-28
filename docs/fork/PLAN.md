@@ -1,13 +1,14 @@
-# ChatGPT Projects routing — fork work plan
+# ChatGPT Project routing — working plan
 
-Goal: optionally route Codex task/subagent conversations into one existing ChatGPT Project instead of personal ChatGPT history.
+Objective: route future Codex task and subagent ChatGPT Web conversations into one existing chosen Project, optionally and fail-closed.
 
-1. **Baseline & security research — PASS (offline):** fork/upstream `cfeaf04`, no pre-existing fork feature, controlled workspace; no official Projects API. Browser URL/DOM identity **not confirmed live**.
-2. **Fail-closed core guard — IMPLEMENTED (Draft):** validate target/current account and Project, new empty composer, retained conversation; check before/after each physical Send; no silent personal-chat fallback.
-3. **Launcher configuration — IMPLEMENTED (Draft):** optional Project field in Settings, default OFF, authenticated account fingerprint, private temporary handoff to existing transactional setup; invalidates retained tabs on target changes; Zero Risk stays manual.
-4. **Runtime/agent bridge — IMPLEMENTED (Draft):** AppConfig → provider → helper feature negotiation → worker, preserves Browser-only/Full harness routing, freshness, streaming/compaction hooks. Real subagent behavior **not tested**.
-5. **Regression coverage — PARTIAL:** unit and browser-facade tests locally passed; in-repository tests added. Must run full `bun run verify`, `smoke:subagents`, `app:smoke`, `app:package`, `audit`, review Linux/Windows/macOS CI.
-6. **DEV ChatGPT E2E — BLOCKED:** use isolated authorized account and existing Project; confirm actual URL/DOM and saved Project membership for new and retained chats, multipart, cancellation, MCP tools, images, V1/native subagents, account switch, denied access, drift; no retries after accepted Send.
-7. **Release gate — PENDING:** continue Draft PR #1; merge and release require a separate explicit approval.
+1. **Repository reconnaissance — PASS**: fork/upstream `cfeaf04`; provider/browser/helper/launcher and tests mapped; `main` untouched.
+2. **Core policy — IMPLEMENTED (Draft)**: strict selected account/Project and empty composer checks; retained chat binding and post-Send verification. Actual Project DOM unconfirmed.
+3. **Launcher & CLI — IMPLEMENTED (Draft)**: optional Settings field, private account fingerprint and temp file, config validation, rollback-compatible setup, stale lease retirement; DEV CLI accepts flags. Zero Risk remains manual.
+4. **Bridge & subagents — IMPLEMENTED (Draft, E2E outstanding)**: provider → launcher helper feature negotiation → task worker, preserving model/effort and ordinary inspection surfaces.
+5. **Offline verification — PARTIAL PASS**: isolated unit/facade tests, CJS parser and static source anchors. Full Bun/TypeScript runtime and Electron test suites NOT RUN.
+6. **CI — BLOCKED/NOT RUN**: fork GitHub Actions currently exposes zero runs; require activation/configuration and full matrix Linux, Windows, macOS, then repair regressions.
+7. **DEV E2E — BLOCKED**: requires isolated, authorized logged-in account and a real Project. Record observed DOM/URL, verify membership after sending, cancellation, reuse/compaction, MCP, images, streaming, Browser-only/Full, V1/Native subagents and negative cases.
+8. **Merge/release — PENDING separate explicit approval**. Maintain Draft PR #1.
 
-Rollback: disable Project routing for already-finished tasks, or revert feature branch; never automatically delete/move existing ChatGPT conversations. No cookies, tokens, raw diagnostics or private Project IDs in PR.
+Invariants: no hidden fallback to ordinary history when Project routing is enabled, no automatic chat deletion/moving, no private Project IDs or auth artifacts in GitHub. Project instructions/memory influence model context; Projects aren't a sandbox boundary. Rollback is disabling the feature or reverting the topic branch, not removing chat history.

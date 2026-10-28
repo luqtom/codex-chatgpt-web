@@ -1,34 +1,32 @@
-# ChatGPT Project routing — verification report
+# ChatGPT Project routing — current test report
 
-Updated: 2026-10-28. PR #1: https://github.com/luqtom/codex-chatgpt-web/pull/1 (Draft).
-Base fork and upstream `main`: `cfeaf04`, v6.1.14.
+Date: 2026-10-28. Draft PR: https://github.com/luqtom/codex-chatgpt-web/pull/1
+Fork `main` / upstream base: `cfeaf04` (v6.1.14). Topic head after DEV fix: `fe35600`.
 
-| Check | Status | Evidence / scope |
-| --- | --- | --- |
-| Original local routing policy | **PASS** | 7/7 Node v22.16 `--experimental-strip-types --test` against locally staged logic |
-| Original local account URL/fingerprint tests | **PASS** | 4/4 `node --test` against local launcher module |
-| Original local simulated browser probe | **PASS** | 11/11 against isolated Playwright Page facade (not Electron) |
-| GitHub source anchor validation | **PASS** | Each replacement anchored exactly once in live fork source at v6.1.14 |
-| GitHub candidate CJS parser | **PASS** | 7 modified Electron/launcher CJS modules parsed by V8 `Function` without execution |
-| GitHub candidate core source sanity | **PASS (static)** | Required guards and paths found across 16 modified real-source candidates |
-| New in-repo browser fixture test | **NOT RUN** | Added as `tests/chatgpt-project-browser-guard.test.ts`, requires Bun/dependencies |
-| Full `bun run verify`, `bun run smoke:subagents` | **NOT RUN** | Bun 1.4.0 unavailable in current container and repository clone blocked by DNS |
-| `bun run app:smoke`, packaging and audit | **NOT RUN** | Electron environment/dependencies unavailable |
-| GitHub Actions CI matrix | **NOT RUN** | Check for runs after pushing this commit; prior PR had zero Actions runs |
-| Real authenticated Project DEV E2E and native↔Web subagents | **BLOCKED** | No isolated authorized logged-in DEV browser/session, and unverified Project DOM route |
+## Code and scope
 
-## Scope implemented in Draft PR
+Implemented on PR branch (default OFF): Settings selection of an existing Project, authenticated account fingerprint, owner-only setup handoff, AppConfig/provider/helper/worker routing, task-only new-chat preparation, Project/account/composer checks before Send, post-acceptance verification, exact retained-chat binding, non-retryable failure, no personal-history fallback, CJS log redaction and DEV CLI flag support. No chats are moved, archived or deleted.
 
-- Optional launcher Settings Project URL, server-authenticated account binding, private temporary setup file and config validation.
-- Task-only Project navigation with checks before composer attachment, before physical Send, after accepted Send and before continuing a retained chat.
-- Browser helper protocol feature gate, nonretryable routing errors, account/project drift failure, log redaction.
-- Ordinary diagnostics/sign-in/MCP connector checks stay outside Project; Zero Risk remains manual.
-- Routing default OFF; no conversations moved, archived, deleted or recreated automatically.
+## Verification matrix
 
-## Important limitations
+| Test | Status | Grounded evidence |
+|---|---|---|
+| Core routing policy (local overlay) | **PASS** | 7/7 Node 22.16 `--experimental-strip-types --test` |
+| Launcher account/Project page contract (local overlay) | **PASS** | 4/4 `node --test` |
+| Browser guard simulated Page (local overlay) | **PASS** | 11/11; no real browser |
+| Isolated strict TypeScript on new policy + guard (local overlay) | **PASS** | `node scripts/test-isolated-types.mjs` with facade types |
+| Staged integration anchors, syntax and drift handling (local overlay) | **PASS (synthetic)** | 65 exact source replacements / 16 files; 8 fragment syntax checks; not a full build |
+| GitHub PR source integration and CJS syntax | **PASS (static)** | 30+ modified files; diff reviewed, seven CJS files parsed by V8, exact target anchors confirmed |
+| In-repo new browser guard test | **NOT RUN** | Code published; requires Bun/dependencies |
+| Full `bun run verify` / `bun run smoke:subagents` | **NOT RUN** | Bun not present; direct clone blocked by DNS |
+| `bun run app:smoke`, `bun run app:package`, `bun run audit` | **NOT RUN** | Full Electron runtime, deps, build unavailable |
+| GitHub Actions CI (Linux, Windows, macOS) | **NOT RUN** | GitHub reports 0 runs and 0 check runs for fork PR, including after code updates |
+| Account-bound Project DEV + MCP + subagents E2E | **BLOCKED** | No isolated logged-in DEV browser and observed URL/DOM fixture |
 
-The account-bound route is a provisional browser-automation contract, **not an official Projects API**. Published Help Center confirms Projects group related conversations and instructions but does not confirm the exact URL/DOM contract. A logged-in isolated DEV experiment is required before release. Changing URL, workspace, account, Project permissions, helper process or DOM shape must block without fallback.
+## Outstanding risk and acceptance
 
-Do not mark ready for production and do not merge before all required tests and E2E pass.
+**Do not mark feature ready or merge/release.** Official Projects documentation confirms organizational semantics but not browser URL or DOM shape. The strict URL parser is provisional. E2E must prove actual saved Project membership, cancellation, compaction, images, streaming, account switch, access denied, helper restarts and subagents (Compatibility V1 and Native/V2). Every failure must block or preserve a previously accepted Send without replay.
 
-Rollback: revert the feature commit on the topic branch; no ChatGPT conversations are touched.
+Potential deployment blocker: GitHub Actions appears not to have started workflows in this fork; inspect/enable the repository's Actions configuration using an authorized GitHub UI/account or available administrative interface. Do not describe CI as PASS when there are no jobs.
+
+Rollback: disable optional setting after active turns finish or revert topic branch changes. Both actions leave existing chats untouched.
