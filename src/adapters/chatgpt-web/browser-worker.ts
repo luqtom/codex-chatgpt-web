@@ -23,6 +23,7 @@ import {
 import { estimateTokens } from "../../lib/token-estimate";
 import { ChatGptProjectRoutingError, validateChatGptProjectTarget, redactChatGptProjectSensitiveText, type ChatGptProjectTarget } from "../../chatgpt-project-routing";
 import { verifyChatGptProjectTurnPage, verifyAcceptedChatGptProjectTurn } from "./project-routing";
+import { ChatGptProjectConversationStore } from "./project-conversation-store";
 import { CHATGPT_STOPPED_THINKING_LABELS } from "./ui-labels";
 import type { CodexProviderConfig } from "../../types";
 import { parseDataUrl } from "../image";
@@ -2008,7 +2009,7 @@ export class ChatGptBrowserWorker {
   private launcherHelper?: LauncherBrowserHelperClient;
   private maintenanceTail: Promise<void> = Promise.resolve();
   private readonly activeRuns = new Map<string, Promise<string>>();
-  private readonly retainedProjectConversations = new Map<string, string>();
+  private readonly retainedProjectConversations = new ChatGptProjectConversationStore();
 
   private constructor(private readonly config: ResolvedBrowserConfig) {}
 
@@ -4802,6 +4803,8 @@ export class ChatGptBrowserWorker {
     if (turn.abortSignal?.aborted) throw new DOMException("ChatGPT web turn aborted", "AbortError");
     const taskProject = maintenancePage ? undefined : this.config.projectTarget;
     let projectConversationId: string | undefined;
+    // In Project mode the first physical Send (including a multipart stage) marks the
+    // turn as activated, so a later failure is reported as non-retryable, never replayed.
     let firstPhysicalSendActivated = false;
     const markPhysicalSendActivated = async () => {
       if (firstPhysicalSendActivated) return;
@@ -4959,7 +4962,7 @@ export class ChatGptBrowserWorker {
       if (!maintenancePage && !launcherSurfaceId) managedPage = page;
       diagnosticPage = page;
       if (taskProject && reuseConversation) {
-        const pinned = turn.conversationKey && this.retainedProjectConversations.get(turn.conversationKey);
+        const pinned = turn.conversationKey && this.retainedProjectConversations.get(taskProject, turn.conversationKey);
         if (!pinned) throw new ChatGptProjectRoutingError("retained Project conversation binding was lost");
         projectConversationId = pinned;
         await verifyChatGptProjectTurnPage(page, taskProject, "before-send", pinned);
@@ -5194,7 +5197,7 @@ export class ChatGptBrowserWorker {
                 const route = await verifyAcceptedChatGptProjectTurn(page, taskProject, projectConversationId, turn.abortSignal);
                 projectConversationId = route.conversationId;
                 if (turn.retainConversation && turn.conversationKey && projectConversationId) {
-                  this.retainedProjectConversations.set(turn.conversationKey, projectConversationId);
+                  this.retainedProjectConversations.set(taskProject, turn.conversationKey, projectConversationId);
                 }
               } : recordStageUsage, onSendActivated: async () => {
                 await this.assertSelectedEffort(page, mode);
@@ -5378,7 +5381,7 @@ export class ChatGptBrowserWorker {
               const route = await verifyAcceptedChatGptProjectTurn(page, taskProject, projectConversationId, turn.abortSignal);
               projectConversationId = route.conversationId;
               if (turn.retainConversation && turn.conversationKey && projectConversationId) {
-                this.retainedProjectConversations.set(turn.conversationKey, projectConversationId);
+                this.retainedProjectConversations.set(taskProject, turn.conversationKey, projectConversationId);
               }
             }
           }, onSendActivated: async () => {
@@ -5759,7 +5762,9 @@ export class ChatGptBrowserWorker {
       }
       if (taskProject && error instanceof Error &&
           redactChatGptProjectSensitiveText(error.message) !== error.message) {
-        error = new ChatGptProjectRoutingError("browser failure contained an unverified project address");
+        // Keep the original failure type (timeout, sign-in, rejection); only hide the address.
+        error.message = redactChatGptProjectSensitiveText(error.message);
+        if (error.stack) error.stack = redactChatGptProjectSensitiveText(error.stack);
       }
       if (error instanceof ChatGptProjectRoutingError) {
         error = new ChatGptWebAdapterError(error.message, {

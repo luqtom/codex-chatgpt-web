@@ -46,6 +46,18 @@ const PROJECT_ID = "(g-p-[a-z0-9][a-z0-9-]{7,127})";
 const NEW_PROJECT_PATH = new RegExp("^/g/" + PROJECT_ID + "/project$");
 const PROJECT_CHAT_PATH = new RegExp("^/g/" + PROJECT_ID + "/c/([a-f0-9-]{8,100})$");
 
+/**
+ * The leading `g-p-<32 hex>` part identifies a Project; a trailing slug may follow
+ * the Project name and change when it is renamed. Unknown shapes compare in full.
+ */
+export function chatGptProjectStableId(projectId: string): string {
+  return /^g-p-[a-f0-9]{32}(?=-|$)/i.exec(projectId)?.[0].toLowerCase() ?? projectId;
+}
+
+export function sameChatGptProject(left: string, right: string): boolean {
+  return chatGptProjectStableId(left) === chatGptProjectStableId(right);
+}
+
 export function parseChatGptProjectRoute(value: string): ChatGptProjectRoute | undefined {
   const url = canonicalUrl(value);
   const fresh = NEW_PROJECT_PATH.exec(url.pathname);
@@ -81,7 +93,7 @@ export function assertChatGptProjectRoute(
 ): ChatGptProjectRoute {
   const selected = parseChatGptProjectRoute(validateChatGptProjectTarget(target).url)!;
   const current = parseChatGptProjectRoute(observed.url);
-  if (!current || current.projectId !== selected.projectId) {
+  if (!current || !sameChatGptProject(current.projectId, selected.projectId)) {
     throw new ChatGptProjectRoutingError("active composer is outside selected project");
   }
   if (!observed.accountKey || observed.accountKey !== target.accountKey) {

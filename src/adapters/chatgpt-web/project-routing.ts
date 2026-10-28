@@ -8,6 +8,7 @@ import {
   assertChatGptProjectRoute,
   ChatGptProjectRoutingError,
   parseChatGptProjectRoute,
+  sameChatGptProject,
   type ChatGptProjectTarget,
   type ChatGptProjectCheckpoint,
   type ChatGptProjectRoute,
@@ -20,7 +21,13 @@ export async function verifyChatGptProjectTurnPage(
   expectedConversationId?: string,
 ): Promise<ChatGptProjectRoute> {
   const before = page.url();
-  const { accountKey } = await readChatGptUsageAccount(page);
+  let accountKey: string;
+  try {
+    ({ accountKey } = await readChatGptUsageAccount(page));
+  } catch {
+    // The shared probe reports Limits-specific wording; report the Project check instead.
+    throw new ChatGptProjectRoutingError("current ChatGPT account could not be verified; check sign-in in the launcher");
+  }
   const composer = page.locator(CHATGPT_COMPOSER_SELECTOR).filter({ visible: true });
   const [composerCount, userTurnCount, assistantTurnCount] = await Promise.all([
     phase === "after-send" ? Promise.resolve(0) : composer.count(),
@@ -54,7 +61,7 @@ export async function verifyAcceptedChatGptProjectTurn(
     signal?.throwIfAborted();
     const current = parseChatGptProjectRoute(page.url());
     const selected = parseChatGptProjectRoute(target.url)!;
-    if (!current || current.projectId !== selected.projectId) {
+    if (!current || !sameChatGptProject(current.projectId, selected.projectId)) {
       throw new ChatGptProjectRoutingError("accepted message left the selected project");
     }
     if (current.kind === "conversation") {
