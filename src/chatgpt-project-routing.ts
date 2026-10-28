@@ -98,6 +98,11 @@ export function assertChatGptProjectRoute(
       throw new ChatGptProjectRoutingError("new project chat is not an empty composer");
     }
   } else if (checkpoint === "before-send") {
+    // A brand-new task may not adopt any existing Project conversation.
+    // A continuation or later multipart stage must have a pinned chat id.
+    if (expectedConversationId === undefined && current.kind !== "new") {
+      throw new ChatGptProjectRoutingError("new task switched into an existing project conversation");
+    }
     if (observed.composerVisible !== true) {
       throw new ChatGptProjectRoutingError("project composer unavailable");
     }

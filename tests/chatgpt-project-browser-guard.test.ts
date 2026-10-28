@@ -56,6 +56,8 @@ test("safely rejects personal history, missing project and changing URL", async 
   }),target,"before-attach")).rejects.toThrow("changed");
 });
 test("retained conversation must keep the exact conversation identity", async () => {
+  await expect(verifyChatGptProjectTurnPage(fakePage({url:conversationUrl}),target,"before-send"))
+    .rejects.toThrow("new task switched");
   expect((await verifyChatGptProjectTurnPage(fakePage({url:conversationUrl}),target,"before-send",conversationId)).conversationId).toBe(conversationId);
   await expect(verifyChatGptProjectTurnPage(fakePage({url:conversationUrl}),target,"before-send","different"))
     .rejects.toThrow("retained");

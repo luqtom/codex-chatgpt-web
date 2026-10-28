@@ -29,10 +29,15 @@ test("new task requires a pristine composer under selected account/project", () 
 });
 
 test("physical send cannot escape project or change a retained chat", () => {
+  expect(() => assertChatGptProjectRoute(target, { url: chat, accountKey, composerVisible: true },
+    "before-send")).toThrow("new task switched");
   expect(assertChatGptProjectRoute(target, { url: chat, accountKey, composerVisible: true },
-    "before-send").kind).toBe("conversation");
+    "before-send", "12345678-1234-1234-1234-123456789abc").kind).toBe("conversation");
   expect(() => assertChatGptProjectRoute(target, { url: chat, accountKey },
     "after-send", "wrong-chat")).toThrow();
+  expect(assertChatGptProjectRoute(target, {
+    url: target.url, accountKey, composerVisible: true, userTurnCount: 0, assistantTurnCount: 0,
+  }, "before-send").kind).toBe("new");
   expect(assertChatGptProjectRoute(target, { url: chat, accountKey },
     "after-send", "12345678-1234-1234-1234-123456789abc").kind).toBe("conversation");
   expect(() => assertChatGptProjectRoute(target, {
